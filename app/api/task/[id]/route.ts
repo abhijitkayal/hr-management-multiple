@@ -184,12 +184,12 @@ export async function PUT(
       status = "Complete";
     }
 
-    const normalizedStatus =
-      body.status === "Completed"
-        ? "Complete"
-        : body.status === "Not Started"
-          ? "Pending"
-          : body.status;
+   const normalizedStatus =
+  body.status === "Completed"
+    ? "Complete"
+    : body.status === "Not Started"
+      ? "Pending"
+      : body.status;
 
     const task =
       await Task.findById(id);
@@ -202,23 +202,35 @@ export async function PUT(
       });
     }
 
-    task.taskTitle =
-      body.taskTitle;
+    if (body.taskTitle !== undefined) {
+      task.taskTitle = body.taskTitle;
+    }
 
-    task.description =
-      body.description;
+    if (body.description !== undefined) {
+      task.description = body.description;
+    }
 
-    task.assignTo =
-      body.assignTo;
+    if (body.assignTo !== undefined) {
+      task.assignTo = body.assignTo;
+    }
 
-    task.importance =
-      body.importance;
+    if (body.importance !== undefined) {
+      task.importance = body.importance;
+    }
 
-    task.deadline =
-      body.deadline;
+    if (body.deadline !== undefined) {
+      task.deadline = body.deadline;
+    }
 
-    task.subTasks =
-  body.subTasks;
+    if (Array.isArray(body.subTasks)) {
+      task.subTasks = body.subTasks.map(
+        (sub: TaskSubTask) => ({
+          ...sub,
+
+          completed: Boolean(sub.completed),
+        })
+      );
+    }
 
     task.progress =
       progress;
@@ -227,6 +239,7 @@ export async function PUT(
       normalizedStatus || status;
 
     await task.save();
+    // console.log("progress:", progress, "status:", status);
 
     return NextResponse.json({
       success: true,

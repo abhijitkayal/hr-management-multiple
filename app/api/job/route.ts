@@ -5,6 +5,8 @@ import {
 
 import { connectDB } from "@/lib/mongodb";
 
+import Notification from "@/lib/models/Notification";
+
 import Job from "@/lib/models/Job";
 
 // CREATE JOB
@@ -55,6 +57,13 @@ export async function POST(
         createdBy,
         status,
       });
+
+    await Notification.create({
+      title: "New Job Posted",
+      message: `${title} job has been posted for ${department} department`,
+      type: "job",
+      branchName,
+    });
 
     return NextResponse.json(
       {

@@ -602,7 +602,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Plus, Users, Eye, X, MapPin, Phone, Mail, Lock, User } from "lucide-react";
+import { Building2, Plus, Users, Eye, X, MapPin, Phone, Mail, Lock, User, Trash2, Pencil } from "lucide-react";
 
 const TNR = { fontFamily: "'Times New Roman', Times, serif" } as React.CSSProperties;
 
@@ -617,6 +617,7 @@ interface Branch {
   hrName: string;
   totalEmployees: number;
   active: boolean;
+  totalBudget: number;
 }
 
 function StatusBadge({ active }: { active: boolean }) {
@@ -645,6 +646,39 @@ export default function BranchPage() {
   // const [managerName, setManagerName] = useState("");
   const [hrName, setHrName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [totalBudget, setTotalBudget] = useState("");
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+
+  const isEditing = editingBranchId !== null;
+
+  function resetForm() {
+    setShowModal(false);
+    setEditingBranchId(null);
+    setBranchName("");
+    setAddress("");
+    setPhone("");
+    setEmail("");
+    setPassword("");
+    setHrName("");
+    setTotalBudget("");
+  }
+
+  function openCreateModal() {
+    resetForm();
+    setShowModal(true);
+  }
+
+  function openEditModal(branch: Branch) {
+    setEditingBranchId(branch._id);
+    setBranchName(branch.branchName);
+    setAddress(branch.address);
+    setPhone(branch.phone);
+    setEmail(branch.email);
+    setPassword(branch.password || "");
+    setHrName(branch.hrName);
+    setTotalBudget(String(branch.totalBudget || 0));
+    setShowModal(true);
+  }
 
   async function fetchBranches() {
     try {
@@ -657,21 +691,30 @@ export default function BranchPage() {
 
   useEffect(() => { void fetchBranches().then(setBranches); }, []);
 
-  async function createBranch() {
+  async function saveBranch() {
     if (!branchName || !address) return alert("Fill all required fields");
     try {
       setCreating(true);
-      const res = await fetch("/api/branches", {
-        method: "POST",
+      const res = await fetch(
+        isEditing ? `/api/branches/${editingBranchId}` : "/api/branches",
+        {
+        method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ branchName, address, phone, email, password, hrName }),
-      });
+        body: JSON.stringify({
+          branchName,
+          address,
+          phone,
+          email,
+          password,
+          hrName,
+          totalBudget: Number(totalBudget || 0),
+        }),
+        }
+      );
       const data = await res.json();
-      if (!data.success) return alert("Create failed");
-      alert("Branch Created");
-      setShowModal(false);
-      setBranchName(""); setAddress(""); setPhone("");
-      setEmail(""); setPassword("");  setHrName("");
+      if (!data.success) return alert(isEditing ? "Update failed" : "Create failed");
+      alert(isEditing ? "Branch Updated" : "Branch Created");
+      resetForm();
       void fetchBranches().then(setBranches);
     } catch (e) { console.log(e); }
     finally { setCreating(false); }
@@ -720,7 +763,7 @@ export default function BranchPage() {
             </p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
             className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:bg-gray-900 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 transition-all duration-200"
             style={TNR}
           >
@@ -764,7 +807,7 @@ export default function BranchPage() {
                         <Building2 size={24} className="text-gray-300" />
                       </div>
                       <p className="text-gray-400 font-medium" style={TNR}>No branches yet</p>
-                      <p className="text-gray-300 text-xs" style={TNR}>Click "Create Branch" to add your first one.</p>
+                      <p className="text-gray-300 text-xs" style={TNR}>Click Create Branch to add your first one.</p>
                     </div>
                   </td>
                 </tr>
@@ -778,7 +821,7 @@ export default function BranchPage() {
                     {/* Branch name + address */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
                           <Building2 size={16} className="text-white" />
                         </div>
                         <div>
@@ -811,7 +854,7 @@ export default function BranchPage() {
                     <td className="px-5 py-4">
                       {branch.hrName ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
                             <span className="text-[10px] font-bold text-purple-700" style={TNR}>
                               {branch.hrName.charAt(0).toUpperCase()}
                             </span>
@@ -862,7 +905,7 @@ export default function BranchPage() {
                     </td>
 
                     {/* Action */}
-                    <td className="px-5 py-4">
+                    {/* <td className="px-5 py-4">
                       <button
                         onClick={() => {
                           void openHrDashboard(branch.branchName);
@@ -872,8 +915,54 @@ export default function BranchPage() {
                       >
                         <Eye size={13} />
                         View
-                      </button>
-                    </td>
+                      </button> */}
+                      <td className="px-5 py-4">
+  <div className="flex gap-2">
+    
+    {/* VIEW */}
+    <button
+      onClick={() => openHrDashboard(branch.branchName)}
+      className="px-3 py-2 rounded-xl border text-blue-600 text-xs font-semibold hover:bg-blue-50"
+    >
+      <Eye size={13} />
+    </button>
+
+    {/* EDIT */}
+    <button
+      onClick={() => openEditModal(branch)}
+      className="px-3 py-2 rounded-xl border text-green-600 text-xs font-semibold hover:bg-green-50"
+    >
+        <Pencil size={13} />
+    </button>
+
+    {/* DELETE */}
+    <button
+      onClick={async () => {
+        if (!confirm("Are you sure you want to delete this branch?")) return;
+
+        const res = await fetch(`/api/branches/${branch._id}`, {
+          method: "DELETE",
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          setBranches((prev) =>
+            prev.filter((b) => b._id !== branch._id)
+          );
+        } else {
+          await fetchBranches().then(setBranches);
+          alert(data.message || "Delete failed");
+        }
+      }}
+      className="px-3 py-2 rounded-xl border text-red-600 text-xs font-semibold hover:bg-red-50"
+    >
+      <Trash2 size={13} />
+    </button>
+
+  </div>
+</td>
+                    {/* </td> */}
                   </tr>
                 ))
               )}
@@ -886,7 +975,7 @@ export default function BranchPage() {
           <div
             className="fixed inset-0 z-50 flex items-center justify-center px-4"
             style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}
-            onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+            onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}
           >
             <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden anim-scaleIn" style={TNR}>
 
@@ -897,18 +986,20 @@ export default function BranchPage() {
                 {/* Modal header */}
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-black flex items-center justify-center flex-shrink-0">
+                    <div className="w-11 h-11 rounded-2xl bg-black flex items-center justify-center shrink-0">
                       <Building2 size={18} className="text-white" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-black leading-tight" style={{ ...TNR, letterSpacing: "-0.02em" }}>
-                        Create Branch
+                        {isEditing ? "Edit Branch" : "Create Branch"}
                       </h2>
-                      <p className="text-xs text-gray-400 mt-0.5" style={TNR}>Fill in the details below</p>
+                      <p className="text-xs text-gray-400 mt-0.5" style={TNR}>{isEditing ? "Update the branch details below" : "Fill in the details below"}</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => setShowModal(false)}
+                    onClick={resetForm}
+                    aria-label="Close modal"
+                    title="Close modal"
                     className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-black transition-all"
                   >
                     <X size={15} />
@@ -997,19 +1088,29 @@ export default function BranchPage() {
                         style={TNR}
                       />
                     </FormField>
+                    <FormField label="Total Budget" icon={<Building2 size={13} />}>
+  <input
+    type="number"
+    className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black"
+    placeholder="Enter total budget"
+    value={totalBudget}
+    onChange={(e) => setTotalBudget(e.target.value)}
+    style={TNR}
+  />
+</FormField>
                   </div>
 
                   {/* Submit */}
                   <button
-                    onClick={createBranch}
+                    onClick={saveBranch}
                     disabled={creating}
                     className="w-full h-12 bg-black text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-900 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
                     style={TNR}
                   >
                     {creating ? (
-                      <><div className="spinner" /> Creating…</>
+                      <><div className="spinner" aria-hidden="true" /> {isEditing ? "Saving…" : "Creating…"}</>
                     ) : (
-                      <><Plus size={15} strokeWidth={2.5} /> Create Branch</>
+                      <>{isEditing ? <Pencil size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />} {isEditing ? "Update Branch" : "Create Branch"}</>
                     )}
                   </button>
                 </div>

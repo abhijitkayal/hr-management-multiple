@@ -7,6 +7,8 @@ import nodemailer from "nodemailer";
 
 import { connectDB } from "@/lib/mongodb";
 
+import Notification from "@/lib/models/Notification";
+
 import EventMeeting from "@/lib/models/EventMeeting";
 
 // CREATE MEETING
@@ -81,6 +83,13 @@ export async function POST(
           </a>
         </p>
       `,
+    });
+
+    await Notification.create({
+      title: "New Meeting Scheduled",
+      message: `${title} meeting scheduled on ${date} at ${time}`,
+      type: "meeting",
+      branchName,
     });
 
     return NextResponse.json(

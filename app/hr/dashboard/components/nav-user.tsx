@@ -29,7 +29,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
-import { Settings } from "lucide-react"
+import { CalendarCheck, Settings } from "lucide-react"
 
 export function NavUser({
   user,
@@ -97,6 +97,16 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+                          <DropdownMenuItem
+  onClick={() =>
+    router.push(
+      `/hr/${user?.id}/attendance`
+    )
+  }
+>
+  <CalendarCheck className="w-4 h-4" />
+  Attendance
+</DropdownMenuItem>
              
              
               <DropdownMenuItem

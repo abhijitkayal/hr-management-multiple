@@ -568,11 +568,9 @@ export default function LoginPage() {
               </span>
             </button>
 
-            <div className="form-divider">or</div>
+           
 
-            <p className="form-footnote">
-              Don&apos;t have an account? <a href="#">Request access</a>
-            </p>
+            
           </div>
         </section>
       </div>

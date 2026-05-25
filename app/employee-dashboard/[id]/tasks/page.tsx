@@ -141,43 +141,110 @@ export default function EmployeeTasksPage({
     }
   }
 
-  async function toggleSubTask(taskId: string, subTaskId: string) {
-    try {
-      let currentTask: Task | null = null;
+ async function toggleSubTask(
+  taskId: string,
+  subTaskId: string
+) {
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          if (task._id !== taskId) return task;
+  try {
 
-          const updatedSubTasks = task.subTasks.map((sub) =>
-            sub._id === subTaskId ? { ...sub, completed: !sub.completed } : sub
-          );
-
-          const completedCount = updatedSubTasks.filter((s) => s.completed).length;
-          const progress = Math.round((completedCount / updatedSubTasks.length) * 100);
-          const status =
-            progress === 100 ? "Complete"
-            : progress > 0   ? "In Progress"
-            :                  "Pending";
-
-          const nextTask = { ...task, subTasks: updatedSubTasks, progress, status };
-          currentTask = nextTask;
-          return nextTask;
-        })
+    const task =
+      tasks.find(
+        (t) =>
+          t._id === taskId
       );
 
-      if (!currentTask) return;
+    if (!task) return;
 
-      await fetch(`/api/task/${taskId}`, {
+    // TOGGLE
+    const updatedSubTasks =
+      task.subTasks.map(
+        (sub) =>
+
+          sub._id ===
+          subTaskId
+
+            ? {
+                ...sub,
+
+                completed:
+                  !sub.completed,
+              }
+
+            : sub
+      );
+
+    // PROGRESS
+    const completedCount =
+      updatedSubTasks.filter(
+        (s) =>
+          s.completed
+      ).length;
+
+    const progress =
+      Math.round(
+        (
+          completedCount /
+          updatedSubTasks.length
+        ) * 100
+      );
+
+    // STATUS
+    const status =
+      progress === 100
+        ? "Complete"
+        : progress > 0
+        ? "In Progress"
+        : "Pending";
+
+    const updatedTask = {
+      ...task,
+
+      subTasks:
+        updatedSubTasks,
+
+      progress,
+
+      status,
+    };
+
+    // UPDATE UI
+    setTasks((prev) =>
+      prev.map((t) =>
+        t._id === taskId
+          ? updatedTask
+          : t
+      )
+    );
+
+    // UPDATE DATABASE
+    await fetch(
+      `/api/task/${taskId}`,
+      {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentTask),
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  }
 
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          subTasks:
+            updatedSubTasks,
+
+          progress,
+
+          status,
+        }),
+      }
+    );
+    console.log("progress:", progress, "status:", status);
+
+  } catch (error) {
+
+    console.log(error);
+  }
+}
   useEffect(() => { void fetchTasks(); }, []);
 
   const completed  = tasks.filter((t) => t.status === "Complete").length;

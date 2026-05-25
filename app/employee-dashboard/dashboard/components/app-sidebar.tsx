@@ -37,6 +37,9 @@ import {
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import {
+  IconCalendarCheck,
+} from "@tabler/icons-react"
 
 // const data = {
 //   user: {
@@ -220,6 +223,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Job Postings",
       url: `/employee-dashboard/${user?.id}/jobs`,
       icon: IconUsers,
+    },
+    {
+      title: "Attendance",
+      url: `/employee-dashboard/${user?.id}/attendance`,
+      icon: IconCalendarCheck,
     },
   ],
   navClouds: [

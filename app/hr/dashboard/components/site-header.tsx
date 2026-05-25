@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 
 import {
+  useCallback,
   useEffect,
   useState,
 } from "react"
@@ -47,6 +48,15 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 
 export function SiteHeader() {
 
+  type NotificationItem = {
+    _id: string
+    title: string
+    message: string
+    createdAt: string
+    branchName?: string
+    read?: boolean
+  }
+
   const [
     open,
     setOpen,
@@ -55,29 +65,9 @@ export function SiteHeader() {
   const [
     notifications,
     setNotifications,
-  ] = useState<any[]>([])
+  ] = useState<NotificationItem[]>([])
 
-  // useEffect(() => {
-  //   fetchNotifications()
-  // }, [])
-
-
-  useEffect(() => {
-
-  // INITIAL FETCH
-  fetchNotifications();
-
-  // AUTO REFRESH EVERY 5 SECONDS
-  const interval =
-    setInterval(() => {
-      fetchNotifications();
-    }, 5000);
-
-  return () =>
-    clearInterval(interval);
-
-}, []);
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
 
   try {
 
@@ -92,9 +82,22 @@ export function SiteHeader() {
       return
     }
 
+    const employeeId =
+      user._id ||
+      user.id ||
+      user.employeeId
+
+    if (!employeeId) {
+      return
+    }
+
     const res =
       await fetch(
-        "/api/notification"
+        `/api/notification?branchName=${encodeURIComponent(
+          user.branchName
+        )}&employeeId=${encodeURIComponent(
+          employeeId
+        )}`
       )
 
     const data =
@@ -106,7 +109,7 @@ export function SiteHeader() {
 
       const filtered =
         data.notifications.filter(
-          (notification: any) =>
+          (notification: NotificationItem) =>
             notification.branchName ===
               user.branchName &&
             notification.read !== true
@@ -120,11 +123,25 @@ export function SiteHeader() {
   } catch (error) {
     console.log(error)
   }
-}
+}, [])
+
 async function markAsRead(
   id: string
 ) {
   try {
+
+    const user = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    )
+
+    const employeeId =
+      user._id ||
+      user.id ||
+      user.employeeId
+
+    if (!user.branchName || !employeeId) {
+      return
+    }
 
     const res =
       await fetch(
@@ -137,6 +154,9 @@ async function markAsRead(
           },
           body: JSON.stringify({
             id,
+            employeeId,
+            branchName:
+              user.branchName,
           }),
         }
       );
@@ -158,6 +178,27 @@ async function markAsRead(
     console.log(error);
   }
 }
+
+  useEffect(() => {
+
+  // INITIAL FETCH
+  const timeout =
+    window.setTimeout(() => {
+      void fetchNotifications();
+    }, 0)
+
+  // AUTO REFRESH EVERY 5 SECONDS
+  const interval =
+    setInterval(() => {
+      void fetchNotifications();
+    }, 5000);
+
+  return () => {
+    clearTimeout(timeout)
+    clearInterval(interval)
+  }
+
+}, [fetchNotifications]);
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
 
@@ -224,37 +265,43 @@ async function markAsRead(
                     ) => (
 
                       <div
-                        key={i}
-                        className="p-4 border-b hover:bg-gray-50"
+                        key={notification._id || i}
+                        className="p-4 border-b hover:bg-gray-50 transition"
                       >
-                        <button
-  onClick={() =>
-    markAsRead(
-      notification._id
-    )
-  }
-  className="mt-3 text-xs bg-black text-white px-3 py-1 rounded-lg"
->
-  Mark as Read
-</button>
+                        <div className="flex items-start justify-between gap-3">
 
-                        <p className="font-semibold text-sm">
-                          {
-                            notification.title
-                          }
-                        </p>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-gray-900 leading-5 truncate">
+                              {
+                                notification.title
+                              }
+                            </p>
 
-                        <p className="text-xs text-gray-500 mt-1">
-                          {
-                            notification.message
-                          }
-                        </p>
+                            <p className="text-xs text-gray-500 mt-1 leading-5 wrap-break-word">
+                              {
+                                notification.message
+                              }
+                            </p>
 
-                        <p className="text-[10px] text-gray-400 mt-2">
-                          {new Date(
-                            notification.createdAt
-                          ).toLocaleString()}
-                        </p>
+                            <p className="text-[10px] text-gray-400 mt-2">
+                              {new Date(
+                                notification.createdAt
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              markAsRead(
+                                notification._id
+                              )
+                            }
+                            className="shrink-0 h-7 px-3 rounded-md border border-gray-300 text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
+                          >
+                            Mark as Read
+                          </button>
+
+                        </div>
 
                       </div>
                     )
