@@ -29,15 +29,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
+import { Settings } from "lucide-react"
 
 export function NavUser({
   user,
 }: {
   user: {
+    id:string
     name: string
     email: string
     avatar: string
     branchName: string
+
   }
 }) {
   const { isMobile } = useSidebar()
@@ -90,21 +93,22 @@ export function NavUser({
                   </span>
                 </div>
               </div>
+              
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
+             
+             
+              <DropdownMenuItem
+  onClick={() =>
+    router.push(
+      `/hr/${user?.id}/settings`
+    )
+  }
+>
+  <Settings className="w-4 h-4" />
+  Settings
+</DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {

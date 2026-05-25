@@ -196,11 +196,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    {
-      title: "Dashboard",
-      url: "/employee-dashboard/dashboard",
-      icon: IconDashboard,
-    },
+    // {
+    //   title: "Dashboard",
+    //   url: "/employee-dashboard/dashboard",
+    //   icon: IconDashboard,
+    // },
     {
       title: "Tasks",
       url: `/employee-dashboard/${user?.id}/tasks`,

@@ -46,6 +46,13 @@ const userSchema =
         type: String,
         default: "",
       },
+      resetToken: {
+  type: String,
+},
+
+resetTokenExpiry: {
+  type: Date,
+},
     },
     {
       timestamps: true,

@@ -25,9 +25,9 @@ const branchSchema =
         type: String,
       },
 
-      managerName: {
-        type: String,
-      },
+      // managerName: {
+      //   type: String,
+      // },
 
       hrName: {
         type: String,

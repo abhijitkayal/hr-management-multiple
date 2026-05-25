@@ -1,190 +1,21 @@
-// "use client";
-
-// import {
-//   useState,
-// } from "react";
-
-// import { useRouter } from "next/navigation";
-
-// export default function LoginPage() {
-//   const router =
-//     useRouter();
-
-//   const [email, setEmail] =
-//     useState("");
-
-//   const [
-//     password,
-//     setPassword,
-//   ] = useState("");
-
-//   async function login() {
-//     console.log("hi");
-//     const response =
-//       await fetch(
-//         "/api/auth/login",
-//         {
-//           method: "POST",
-
-//           headers: {
-//             "Content-Type":
-//               "application/json",
-//           },
-
-//           body: JSON.stringify({
-//             email,
-//             password,
-//           }),
-//         }
-//       );
-
-//     const data =
-//       await response.json();
-//       console.log(data);
-
-//     if (!data.success) {
-//       return alert(
-//         data.message
-//       );
-//     }
-
-//     localStorage.setItem(
-//       "token",
-//       data.token
-//     );
-
-//     localStorage.setItem(
-//       "user",
-//       JSON.stringify(
-//         data.user
-//       )
-//     );
-
-//     alert(
-//       "Login Success"
-//     );
-
-//    if (data.user.role === "admin") {
-//   router.push("/admin");
-// }
-
-// else if (
-//   data.user.role === "hr"
-// ) {
-//   router.push("/hr");
-// }
-//   }
-
-//   return (
-//     <div
-//       style={{
-//         minHeight: "100vh",
-//         background: "#111",
-//         display: "flex",
-//         justifyContent:
-//           "center",
-//         alignItems:
-//           "center",
-//       }}
-//     >
-//       <div
-//         style={{
-//           width: "350px",
-//           background: "#1a1a1a",
-//           padding: "30px",
-//           borderRadius: "20px",
-//           display: "grid",
-//           gap: "16px",
-//         }}
-//       >
-//         <h1
-//           style={{
-//             color: "#fff",
-//           }}
-//         >
-//           Login
-//         </h1>
-
-//         <input
-//           placeholder="Email"
-//           value={email}
-//           onChange={(e) =>
-//             setEmail(
-//               e.target.value
-//             )
-//           }
-//           style={inputStyle}
-//         />
-
-//         <input
-//           placeholder="Password"
-//           value={password}
-//           onChange={(e) =>
-//             setPassword(
-//               e.target.value
-//             )
-//           }
-//           style={inputStyle}
-//         />
-
-//         <button
-//           onClick={login}
-//           style={buttonStyle}
-//         >
-//           Login
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// const inputStyle = {
-//   padding: "14px",
-
-//   borderRadius: "12px",
-
-//   border: "1px solid #333",
-
-//   background: "#000",
-
-//   color: "#fff",
-// };
-
-// const buttonStyle = {
-//   background: "#d4841a",
-
-//   border: "none",
-
-//   padding: "14px",
-
-//   borderRadius: "12px",
-
-//   color: "#fff",
-
-//   cursor: "pointer",
-// };
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
-  const [showPopup, setShowPopup] =
-  useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   async function login() {
     setLoading(true);
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -195,13 +26,12 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!data.success) {
-        return alert(data.message);
+        alert(data.message);
+        return;
       }
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-
-      setShowPopup(true);
 
       const loginId = data.user.id || "";
 
@@ -210,367 +40,462 @@ export default function LoginPage() {
       } else if (data.user.role === "hr") {
         router.push(`/hr/${loginId}`);
       } else if (data.user.role === "employee") {
-        router.push(`/employee-dashboard/${loginId}`);
+        router.push(`/employee-dashboard/${loginId}/tasks`);
       }
+    } catch (error) {
+      console.log(error);
+      alert("Login failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleForgotPassword(
+    e: FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    if (!forgotEmail.trim()) {
+      alert("Please enter your email address");
+      return;
+    }
+
+    try {
+      setForgotLoading(true);
+
+      const response = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await response.json();
+      alert(data.message);
+
+      if (data.success) {
+        setShowForgotPassword(false);
+        setForgotEmail("");
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Unable to send reset link");
+    } finally {
+      setForgotLoading(false);
     }
   }
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body { background: #ffffff; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; background: #f5f3ef; }
 
         .login-root {
           min-height: 100vh;
-          background: #ffffff;
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1.15fr 0.95fr;
           font-family: 'DM Sans', sans-serif;
-          overflow: hidden;
+          background: linear-gradient(135deg, #0a0a0a 0%, #131313 100%);
         }
 
-        /* ── Left decorative panel ── */
-        .panel-left {
+        .hero-panel {
           position: relative;
-          background: #0a0a0a;
+          overflow: hidden;
+          padding: 56px;
+          color: white;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 52px 56px;
-          overflow: hidden;
-          opacity: 0;
-          transform: translateX(-40px);
-          transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        .panel-left.visible {
-          opacity: 1;
-          transform: translateX(0);
         }
 
-        .panel-circle {
-          position: absolute;
-          border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.07);
-        }
-        .panel-circle-1 { width: 520px; height: 520px; top: -180px; right: -180px; }
-        .panel-circle-2 { width: 320px; height: 320px; bottom: 60px; left: -80px; }
-        .panel-circle-3 { width: 160px; height: 160px; bottom: 220px; right: 60px; }
-
-        .panel-dot-grid {
+        .hero-panel::before {
+          content: '';
           position: absolute;
           inset: 0;
-          background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-          background-size: 32px 32px;
+          background-image: radial-gradient(circle at 20% 20%, rgba(212,132,26,0.18), transparent 28%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 22%), radial-gradient(circle at 60% 80%, rgba(212,132,26,0.12), transparent 24%);
+          pointer-events: none;
         }
 
-        .panel-accent-line {
-          position: absolute;
-          left: 56px;
-          top: 0;
-          bottom: 0;
-          width: 1px;
-          background: linear-gradient(to bottom, transparent, rgba(212,132,26,0.6) 40%, rgba(212,132,26,0.6) 60%, transparent);
-        }
-
-        .brand {
-          position: relative;
-          z-index: 1;
-        }
         .brand-mark {
-          width: 40px;
-          height: 40px;
-          background: #d4841a;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 48px;
-        }
-        .brand-mark span {
-          color: #fff;
-          font-weight: 700;
-          font-size: 18px;
-          letter-spacing: -0.5px;
-        }
-
-        .panel-headline {
-          font-family: 'DM Serif Display', serif;
-          font-size: clamp(36px, 4vw, 54px);
-          line-height: 1.12;
-          color: #ffffff;
-          letter-spacing: -1px;
-        }
-        .panel-headline em {
-          font-style: italic;
-          color: #d4841a;
-        }
-
-        .panel-footer {
           position: relative;
           z-index: 1;
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          background: #d4841a;
+          display: grid;
+          place-items: center;
+          font-weight: 800;
+          color: #fff;
+          margin-bottom: 42px;
         }
-        .panel-tagline {
-          font-size: 13px;
-          color: rgba(255,255,255,0.35);
-          letter-spacing: 0.04em;
+
+        .hero-copy { position: relative; z-index: 1; max-width: 520px; }
+        .hero-kicker {
+          text-transform: uppercase;
+          letter-spacing: 0.18em;
+          font-size: 11px;
+          color: rgba(255,255,255,0.5);
+          margin-bottom: 18px;
+        }
+
+        .hero-title {
+          font-family: 'DM Serif Display', serif;
+          font-size: clamp(42px, 5vw, 68px);
+          line-height: 0.98;
+          letter-spacing: -0.04em;
+          margin: 0;
+        }
+
+        .hero-title em { color: #d4841a; font-style: italic; }
+        .hero-subtitle {
+          margin-top: 18px;
+          max-width: 460px;
+          color: rgba(255,255,255,0.72);
+          font-size: 15px;
+          line-height: 1.7;
+        }
+
+        .hero-footer {
+          position: relative;
+          z-index: 1;
+          color: rgba(255,255,255,0.36);
+          font-size: 12px;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
         }
 
-        /* ── Right form panel ── */
-        .panel-right {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          padding: 60px 48px;
-          background: #ffffff;
-          position: relative;
-          opacity: 0;
-          transform: translateY(24px);
-          transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
-        }
-        .panel-right.visible {
-          opacity: 1;
-          transform: translateY(0);
+        .form-panel {
+          background: #f5f3ef;
+          display: grid;
+          place-items: center;
+          padding: 32px;
         }
 
-        .form-wrapper {
+        .form-card {
           width: 100%;
-          max-width: 400px;
+          max-width: 420px;
+          background: rgba(255,255,255,0.86);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255,255,255,0.7);
+          box-shadow: 0 30px 80px rgba(0,0,0,0.08);
+          border-radius: 28px;
+          padding: 34px;
         }
 
         .form-eyebrow {
+          margin: 0 0 10px;
           font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.12em;
+          font-weight: 700;
+          letter-spacing: 0.18em;
           text-transform: uppercase;
           color: #d4841a;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .form-eyebrow::before {
-          content: '';
-          display: inline-block;
-          width: 20px;
-          height: 2px;
-          background: #d4841a;
-          border-radius: 2px;
         }
 
         .form-title {
-          font-family: 'DM Serif Display', serif;
-          font-size: clamp(30px, 3vw, 42px);
-          color: #0a0a0a;
-          letter-spacing: -1px;
-          line-height: 1.1;
-          margin-bottom: 8px;
-        }
-        .form-subtitle {
-          font-size: 14px;
-          color: #888;
-          margin-bottom: 40px;
-          font-weight: 300;
+          margin: 0;
+          font-size: 34px;
+          line-height: 1;
+          font-weight: 800;
+          color: #141414;
         }
 
-        /* ── Input group ── */
-        .input-group {
-          position: relative;
-          margin-bottom: 20px;
+        .form-subtitle {
+          margin: 12px 0 28px;
+          color: #6b7280;
+          line-height: 1.6;
+          font-size: 14px;
         }
+
+        .input-group { margin-bottom: 18px; }
         .input-label {
           display: block;
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #999;
           margin-bottom: 8px;
-          transition: color 0.2s;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #6b7280;
         }
-        .input-group:has(.field-focused) .input-label {
-          color: #0a0a0a;
-        }
-
-        .input-field-wrap {
-          position: relative;
-        }
+        .input-field-wrap { position: relative; }
         .input-field {
           width: 100%;
-          padding: 14px 16px 14px 44px;
-          border: 1.5px solid #e8e8e8;
-          border-radius: 12px;
-          background: #fafafa;
-          color: #0a0a0a;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 15px;
+          height: 52px;
+          border-radius: 14px;
+          border: 1.5px solid #e6e1d9;
+          background: #fff;
+          padding: 0 46px 0 16px;
+          font-size: 14px;
           outline: none;
-          transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
-          -webkit-appearance: none;
+          transition: border-color .2s ease, box-shadow .2s ease;
         }
-        .input-field::placeholder { color: #bbb; }
-        .input-field:focus {
-          border-color: #0a0a0a;
-          background: #ffffff;
-          box-shadow: 0 0 0 4px rgba(10,10,10,0.05);
+        .input-field:focus, .field-focused {
+          border-color: #d4841a;
+          box-shadow: 0 0 0 4px rgba(212,132,26,0.12);
         }
-
         .input-icon {
           position: absolute;
-          left: 14px;
-          top: 50%;
+          top: 50%; right: 16px;
           transform: translateY(-50%);
-          color: #bbb;
-          transition: color 0.2s;
-          display: flex;
-          align-items: center;
-        }
-        .input-field:focus ~ .input-icon,
-        .input-field-wrap:has(.input-field:focus) .input-icon {
-          color: #0a0a0a;
+          color: #a3a3a3;
+          pointer-events: none;
         }
 
-        /* ── Submit button ── */
+        .forgot-row {
+          display: flex;
+          justify-content: flex-end;
+          margin: -6px 0 24px;
+        }
+        .forgot-link {
+          border: 0;
+          background: transparent;
+          color: #d4841a;
+          padding: 0;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
         .btn-login {
           width: 100%;
-          padding: 15px 24px;
-          margin-top: 8px;
+          height: 52px;
+          border: 0;
+          border-radius: 14px;
           background: #0a0a0a;
-          border: none;
-          border-radius: 12px;
-          color: #ffffff;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 15px;
-          font-weight: 600;
-          letter-spacing: 0.02em;
+          color: white;
+          font-weight: 700;
+          font-size: 14px;
           cursor: pointer;
-          position: relative;
-          overflow: hidden;
-          transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+          transition: transform .2s ease, background .2s ease;
         }
-        .btn-login::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(212,132,26,0.3), transparent 60%);
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-        .btn-login:hover {
-          background: #1a1a1a;
-          box-shadow: 0 8px 24px rgba(10,10,10,0.18);
-          transform: translateY(-1px);
-        }
-        .btn-login:hover::after { opacity: 1; }
-        .btn-login:active { transform: translateY(0); }
-        .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
+        .btn-login:disabled { cursor: not-allowed; opacity: 0.75; }
+        .btn-login:not(:disabled):hover { transform: translateY(-1px); background: #1a1a1a; }
         .btn-content {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          position: relative;
-          z-index: 1;
+          gap: 10px;
         }
-
-        /* Spinner */
         .spinner {
           width: 16px;
           height: 16px;
-          border: 2px solid rgba(255,255,255,0.3);
+          border: 2px solid rgba(255,255,255,0.35);
           border-top-color: #fff;
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
+          border-radius: 999px;
+          animation: spin 0.8s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Divider / footer ── */
         .form-divider {
           display: flex;
           align-items: center;
           gap: 12px;
-          margin: 28px 0 20px;
-          color: #ccc;
+          margin: 22px 0;
+          color: #d1d5db;
           font-size: 12px;
         }
-        .form-divider::before, .form-divider::after {
+        .form-divider::before,
+        .form-divider::after {
           content: '';
-          flex: 1;
           height: 1px;
-          background: #ebebeb;
+          flex: 1;
+          background: #ece7df;
         }
 
         .form-footnote {
           text-align: center;
-          font-size: 13px;
-          color: #aaa;
+          margin: 0;
+          color: #6b7280;
+          font-size: 14px;
         }
         .form-footnote a {
-          color: #d4841a;
+          color: #141414;
+          font-weight: 700;
           text-decoration: none;
-          font-weight: 500;
         }
-        .form-footnote a:hover { text-decoration: underline; }
 
-        /* ── Corner decoration ── */
-        .corner-deco {
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(6px);
+        }
+        .modal-card {
+          position: relative;
+          width: 100%;
+          max-width: 460px;
+          overflow: hidden;
+          border-radius: 28px;
+          background: #fff;
+          box-shadow: 0 28px 90px rgba(0,0,0,0.22);
+          font-family: 'DM Sans', sans-serif;
+        }
+        .modal-accent { height: 4px; background: linear-gradient(90deg, #d4841a, #f0a84e); }
+        .modal-glow {
           position: absolute;
-          bottom: 40px;
-          right: 40px;
-          width: 80px;
-          height: 80px;
-          border-right: 2px solid #ebebeb;
-          border-bottom: 2px solid #ebebeb;
-          border-radius: 0 0 16px 0;
+          top: 0; right: 0;
+          width: 280px; height: 280px;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(212,132,26,0.12) 0%, transparent 70%);
+          transform: translate(28%, -28%);
+          pointer-events: none;
         }
-
-        /* ── Responsive ── */
-        @media (max-width: 768px) {
+        .modal-body {
+          position: relative;
+          z-index: 1;
+          padding: 32px;
+        }
+        .modal-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .modal-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 18px;
+          display: grid;
+          place-items: center;
+          background: rgba(212,132,26,0.1);
+          margin-bottom: 18px;
+        }
+        .modal-title {
+          margin: 0;
+          font-family: 'DM Serif Display', serif;
+          font-size: 30px;
+          line-height: 1;
+          letter-spacing: -0.03em;
+          color: #111827;
+        }
+        .modal-copy {
+          margin: 10px 0 0;
+          color: #6b7280;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+        .modal-close {
+          border: 0;
+          background: transparent;
+          color: #9ca3af;
+          font-size: 28px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 0;
+          margin-top: -4px;
+        }
+        .modal-label {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: #6b7280;
+        }
+        .modal-input-wrap { position: relative; margin-bottom: 10px; }
+        .modal-input {
+          width: 100%;
+          height: 52px;
+          border-radius: 14px;
+          border: 1.5px solid #e8e8e8;
+          background: #fafafa;
+          padding: 0 16px 0 46px;
+          font-size: 14px;
+          outline: none;
+          transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+        }
+        .modal-input:focus {
+          border-color: #d4841a;
+          background: #fff;
+          box-shadow: 0 0 0 4px rgba(212,132,26,0.1);
+        }
+        .modal-input-icon {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #bbb;
+          pointer-events: none;
+        }
+        .modal-note {
+          margin: 10px 0 0;
+          color: #9ca3af;
+          font-size: 12px;
+        }
+        .modal-submit,
+        .modal-secondary {
+          width: 100%;
+          height: 52px;
+          border-radius: 14px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
+        }
+        .modal-submit {
+          border: 0;
+          background: #0a0a0a;
+          color: white;
+          margin-top: 14px;
+        }
+        .modal-submit:disabled {
+          cursor: not-allowed;
+          background: #c4791a;
+          opacity: 0.85;
+        }
+        .modal-submit:not(:disabled):hover {
+          transform: translateY(-1px);
+          background: #1a1a1a;
+        }
+        .modal-secondary {
+          border: 1.5px solid #e8e8e8;
+          background: transparent;
+          color: #555;
+          margin-top: 14px;
+        }
+        .modal-secondary:hover {
+          border-color: #0a0a0a;
+          color: #0a0a0a;
+          background: #fafafa;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 900px) {
           .login-root { grid-template-columns: 1fr; }
-          .panel-left { display: none; }
-          .panel-right { padding: 40px 28px; }
+          .hero-panel { min-height: 340px; padding: 36px 24px; }
+          .form-panel { padding: 20px; }
+          .form-card { padding: 28px 22px; }
         }
       `}</style>
 
       <div className="login-root">
-        {/* ── Left Panel ── */}
-        <div className={`panel-left ${mounted ? "visible" : ""}`}>
-          <div className="panel-dot-grid" />
-          <div className="panel-circle panel-circle-1" />
-          <div className="panel-circle panel-circle-2" />
-          <div className="panel-circle panel-circle-3" />
-          <div className="panel-accent-line" />
-
-          <div className="brand" style={{ position: "relative", zIndex: 1 }}>
-            <div className="brand-mark"><span>A</span></div>
-            <h2 className="panel-headline">
-              Your workspace,<br /><em>redefined</em><br />for what's next.
-            </h2>
+        <section className="hero-panel">
+          <div className="brand-mark">H</div>
+          <div className="hero-copy">
+            <p className="hero-kicker">Human Resources platform</p>
+            <h1 className="hero-title">
+              Manage your team with <em>clarity</em> and control.
+            </h1>
+            <p className="hero-subtitle">
+              Sign in to handle employee workflows, task approvals, payroll, and internal operations from one place.
+            </p>
           </div>
+          <div className="hero-footer">Secure access for HR and employees</div>
+        </section>
 
-          <div className="panel-footer">
-            <p className="panel-tagline">Secure · Reliable · Enterprise-grade</p>
-          </div>
-        </div>
-
-        {/* ── Right Panel ── */}
-        <div className={`panel-right ${mounted ? "visible" : ""}`}>
-          <div className="corner-deco" />
-
-          <div className="form-wrapper">
+        <section className="form-panel">
+          <div className="form-card">
             <p className="form-eyebrow">Welcome back</p>
-            <h1 className="form-title">Sign in</h1>
-            <p className="form-subtitle">Enter your credentials to continue</p>
+            <h2 className="form-title">Sign in</h2>
+            <p className="form-subtitle">Enter your credentials to continue.</p>
 
-            {/* Email */}
             <div className="input-group">
               <label className="input-label">Email address</label>
               <div className="input-field-wrap">
@@ -592,7 +517,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="input-group">
               <label className="input-label">Password</label>
               <div className="input-field-wrap">
@@ -614,16 +538,25 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ textAlign: "right", marginTop: "-8px", marginBottom: "24px" }}>
-              <a href="#" style={{ fontSize: "13px", color: "#d4841a", textDecoration: "none", fontWeight: 500 }}>
+            <div className="forgot-row">
+              <button
+                type="button"
+                className="forgot-link"
+                onClick={() => {
+                  setForgotEmail(email);
+                  setShowForgotPassword(true);
+                }}
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
 
             <button className="btn-login" onClick={login} disabled={loading}>
               <span className="btn-content">
                 {loading ? (
-                  <><div className="spinner" /> Signing in…</>
+                  <>
+                    <span className="spinner" /> Signing in…
+                  </>
                 ) : (
                   <>
                     Continue
@@ -638,12 +571,78 @@ export default function LoginPage() {
             <div className="form-divider">or</div>
 
             <p className="form-footnote">
-              Don&apos;t have an account?{" "}
-              <a href="#">Request access</a>
+              Don&apos;t have an account? <a href="#">Request access</a>
             </p>
           </div>
-        </div>
+        </section>
       </div>
+
+      {showForgotPassword && (
+        <div className="modal-backdrop" onClick={() => setShowForgotPassword(false)}>
+          <form
+            onSubmit={handleForgotPassword}
+            onClick={(e) => e.stopPropagation()}
+            className="modal-card"
+          >
+            <div className="modal-accent" />
+            <div className="modal-glow" />
+            <div className="modal-body">
+              <div className="modal-icon">
+                <svg width="26" height="26" fill="none" stroke="#d4841a" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  <circle cx="12" cy="16" r="1.2" fill="#d4841a" stroke="none" />
+                </svg>
+              </div>
+
+              <div className="modal-head">
+                <div>
+                  <h3 className="modal-title">Reset your password</h3>
+                  <p className="modal-copy">
+                    Enter your work email and we&apos;ll send you a secure reset link.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={() => setShowForgotPassword(false)}
+                  aria-label="Close reset password dialog"
+                >
+                  ×
+                </button>
+              </div>
+
+              <label className="modal-label">Email address</label>
+              <div className="modal-input-wrap">
+                <span className="modal-input-icon">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <rect x="2" y="4" width="20" height="16" rx="3" />
+                    <path d="M2 8l10 6 10-6" />
+                  </svg>
+                </span>
+                <input
+                  className="modal-input"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <p className="modal-note">We&apos;ll detect your role and send the appropriate reset link.</p>
+
+              <button type="submit" className="modal-submit" disabled={forgotLoading}>
+                {forgotLoading ? "Sending link..." : "Send reset link"}
+              </button>
+
+              <button type="button" className="modal-secondary" onClick={() => setShowForgotPassword(false)}>
+                Back to sign in
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 }

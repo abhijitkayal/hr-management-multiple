@@ -1,477 +1,3 @@
-// "use client";
-
-// import {
-//   useEffect,
-//   useState,
-// } from "react";
-
-// export default function TaskPage() {
-//   const [open, setOpen] =
-//     useState(false);
-
-//   const [loading, setLoading] =
-//     useState(false);
-
-//   const [tasks, setTasks] =
-//     useState<any[]>([]);
-//     const [editId, setEditId] =
-//   useState("");
-
-//   const [formData, setFormData] =
-//     useState({
-//       taskTitle: "",
-//       description: "",
-//       assignTo: "",
-//       importance: "Low",
-//       deadline: "",
-//       status: "Not Started",
-//     });
-
-//   // FETCH TASKS
-//   const fetchTasks = async () => {
-//     try {
-//       const user = JSON.parse(
-//         localStorage.getItem(
-//           "user"
-//         ) || "{}"
-//       );
-
-//       const branchName =
-//         user.branchName;
-
-//       const res = await fetch(
-//         "/api/task"
-//       );
-
-//       const data = await res.json();
-
-//       if (data.success) {
-//         const filteredTasks =
-//           data.tasks.filter(
-//             (task: any) =>
-//               task.branchName ===
-//               branchName
-//           );
-
-//         setTasks(filteredTasks);
-//       }
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchTasks();
-//   }, []);
-
-//   const handleChange = (
-//     e: any
-//   ) => {
-//     setFormData({
-//       ...formData,
-//       [e.target.name]:
-//         e.target.value,
-//     });
-//   };
-
-//   const handleEdit = (
-//   task: any
-// ) => {
-//   setEditId(task._id);
-
-//   setFormData({
-//     taskTitle:
-//       task.taskTitle,
-
-//     description:
-//       task.description,
-
-//     assignTo:
-//       task.assignTo,
-
-//     importance:
-//       task.importance,
-
-//     deadline:
-//       task.deadline
-//         ?.split("T")[0],
-
-//     status: task.status,
-//   });
-
-//   setOpen(true);
-// };
-// const handleDelete = async (
-//   id: string
-// ) => {
-//   try {
-//     const confirmDelete =
-//       confirm(
-//         "Are you sure want to delete?"
-//       );
-
-//     if (!confirmDelete)
-//       return;
-
-//     const res = await fetch(
-//       `/api/task/${id}`,
-//       {
-//         method: "DELETE",
-//       }
-//     );
-
-//     const data =
-//       await res.json();
-
-//     alert(data.message);
-
-//     fetchTasks();
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
-//   // SUBMIT
-//   const handleSubmit = async (
-//     e: any
-//   ) => {
-//     e.preventDefault();
-
-//     try {
-//       setLoading(true);
-
-//       const user = JSON.parse(
-//         localStorage.getItem(
-//           "user"
-//         ) || "{}"
-//       );
-
-//       const branchName =
-//         user.branchName;
-
-//       const createdBy =
-//         user.email;
-
-//       const res = await fetch(
-//   editId
-//     ? `/api/task/${editId}`
-//     : "/api/task",
-//   {
-//     method: editId
-//       ? "PUT"
-//       : "POST",
-
-//     headers: {
-//       "Content-Type":
-//         "application/json",
-//     },
-
-//     body: JSON.stringify({
-//       ...formData,
-//       branchName,
-//       createdBy,
-//     }),
-//   }
-// );
-
-//       const data =
-//         await res.json();
-
-//       alert(data.message);
-
-//       if (data.success) {
-//         setOpen(false);
-//         setEditId("");
-
-//         fetchTasks();
-
-//         setFormData({
-//           taskTitle: "",
-//           description: "",
-//           assignTo: "",
-//           importance: "Low",
-//           deadline: "",
-//           status:
-//             "Not Started",
-//         });
-//       }
-//     } catch (error) {
-//       console.log(error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="p-6">
-//       {/* TOP */}
-//       <div className="flex items-center justify-between mb-6">
-//         <h1 className="text-3xl font-bold">
-//           Task Management
-//         </h1>
-
-//         <button
-//           onClick={() =>
-//             setOpen(true)
-//           }
-//           className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-//         >
-//           Add Task
-//         </button>
-//       </div>
-
-//       {/* TABLE */}
-//       <div className="overflow-x-auto bg-white rounded-2xl shadow">
-//         <table className="w-full">
-//           <thead className="bg-gray-200">
-//             <tr>
-//               <th className="p-4 text-left">
-//                 Task
-//               </th>
-
-//               <th className="p-4 text-left">
-//                 Assign To
-//               </th>
-
-//               <th className="p-4 text-left">
-//                 Importance
-//               </th>
-
-//               <th className="p-4 text-left">
-//                 Deadline
-//               </th>
-
-//               <th className="p-4 text-left">
-//                 Status
-//               </th>
-//               <th className="p-4 text-left">
-//   Actions
-// </th>
-//             </tr>
-//           </thead>
-
-//           <tbody>
-//             {tasks.map(
-//               (task, index) => (
-//                 <tr
-//                   key={index}
-//                   className="border-b"
-//                 >
-//                   <td className="p-4">
-//                     {
-//                       task.taskTitle
-//                     }
-//                   </td>
-
-//                   <td className="p-4">
-//                     {
-//                       task.assignTo
-//                     }
-//                   </td>
-
-//                   <td className="p-4">
-//                     {
-//                       task.importance
-//                     }
-//                   </td>
-
-//                   <td className="p-4">
-//                     {new Date(
-//                       task.deadline
-//                     ).toLocaleDateString()}
-//                   </td>
-
-//                   <td className="p-4">
-//                     <span
-//                       className={`px-3 py-1 rounded-full border text-sm
-//                       ${
-//                         task.status ===
-//                         "Complete"
-//                           ? "border-green-500 bg-green-500/10 text-green-600"
-
-//                           : task.status ===
-//                             "In Progress"
-//                           ? "border-blue-500 bg-blue-500/10 text-blue-600"
-
-//                           : "border-red-500 bg-red-500/10 text-red-600"
-//                       }`}
-//                     >
-//                       {
-//                         task.status
-//                       }
-//                     </span>
-//                   </td>
-//                   <td className="p-4 flex gap-3">
-//   <button
-//     onClick={() =>
-//       handleEdit(task)
-//     }
-//     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
-//   >
-//     Edit
-//   </button>
-
-//   <button
-//     onClick={() =>
-//       handleDelete(task._id)
-//     }
-//     className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-//   >
-//     Delete
-//   </button>
-// </td>
-//                 </tr>
-//               )
-//             )}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       {/* MODAL */}
-//       {open && (
-//         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-//           <div className="bg-white w-full max-w-2xl rounded-2xl p-6">
-//             <div className="flex items-center justify-between mb-5">
-//               <h2 className="text-2xl font-bold">
-//                {editId
-//   ? "Edit Task"
-//   : "Create Task"}
-//               </h2>
-
-//               <button
-//                 onClick={() =>
-//                   setOpen(false)
-//                 }
-//               >
-//                 ✕
-//               </button>
-//             </div>
-
-//             <form
-//               onSubmit={
-//                 handleSubmit
-//               }
-//               className="grid grid-cols-2 gap-4"
-//             >
-//               <input
-//                 type="text"
-//                 name="taskTitle"
-//                 placeholder="Task Title"
-//                 value={
-//                   formData.taskTitle
-//                 }
-//                 onChange={
-//                   handleChange
-//                 }
-//                 className="border p-3 rounded-lg"
-//               />
-
-//               <input
-//                 type="email"
-//                 name="assignTo"
-//                 placeholder="Assign Email"
-//                 value={
-//                   formData.assignTo
-//                 }
-//                 onChange={
-//                   handleChange
-//                 }
-//                 className="border p-3 rounded-lg"
-//               />
-
-//               <textarea
-//                 name="description"
-//                 placeholder="Description"
-//                 value={
-//                   formData.description
-//                 }
-//                 onChange={
-//                   handleChange
-//                 }
-//                 className="border p-3 rounded-lg col-span-2"
-//               />
-
-//               <select
-//                 name="importance"
-//                 value={
-//                   formData.importance
-//                 }
-//                 onChange={
-//                   handleChange
-//                 }
-//                 className="border p-3 rounded-lg"
-//               >
-//                 <option value="Low">
-//                   Low
-//                 </option>
-
-//                 <option value="Medium">
-//                   Medium
-//                 </option>
-
-//                 <option value="High">
-//                   High
-//                 </option>
-//               </select>
-
-//               <input
-//                 type="date"
-//                 name="deadline"
-//                 value={
-//                   formData.deadline
-//                 }
-//                 onChange={
-//                   handleChange
-//                 }
-//                 className="border p-3 rounded-lg"
-//               />
-
-//               <select
-//                 name="status"
-//                 value={
-//                   formData.status
-//                 }
-//                 onChange={
-//                   handleChange
-//                 }
-//                 className="border p-3 rounded-lg col-span-2"
-//               >
-//                 <option value="Not Started">
-//                   Not Started
-//                 </option>
-
-//                 <option value="In Progress">
-//                   In Progress
-//                 </option>
-
-//                 <option value="Complete">
-//                   Complete
-//                 </option>
-//               </select>
-
-//               <button
-//                 type="submit"
-//                 disabled={loading}
-//                 className="bg-green-600 text-white py-3 rounded-lg col-span-2"
-//               >
-//                 {loading
-//   ? editId
-//     ? "Updating..."
-//     : "Creating..."
-//   : editId
-//   ? "Update Task"
-//   : "Create Task"}
-//               </button>
-//             </form>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -516,8 +42,17 @@ function CloseIcon() {
 }
 
 // ── Pie Chart ──────────────────────────────────────────────────────────────────
-function PieChart({ notStarted, inProgress, complete }: { notStarted: number; inProgress: number; complete: number }) {
+function PieChart({
+  notStarted,
+  inProgress,
+  complete,
+}: {
+  notStarted: number;
+  inProgress: number;
+  complete: number;
+}) {
   const total = notStarted + inProgress + complete;
+  const TNR = '"Times New Roman", Times, serif';
 
   if (total === 0) {
     return (
@@ -530,7 +65,6 @@ function PieChart({ notStarted, inProgress, complete }: { notStarted: number; in
     );
   }
 
-  // Build pie slices
   const slices = [
     { value: notStarted, color: "#ef4444", label: "Not Started" },
     { value: inProgress, color: "#3b82f6", label: "In Progress" },
@@ -569,10 +103,10 @@ function PieChart({ notStarted, inProgress, complete }: { notStarted: number; in
       <svg viewBox="0 0 120 120" width="140" height="140">
         {paths}
         <circle cx="60" cy="60" r="26" fill="white" />
-        <text x="60" y="56" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#111" fontFamily="Times New Roman">
+        <text x="60" y="56" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#111" fontFamily={TNR}>
           {total}
         </text>
-        <text x="60" y="69" textAnchor="middle" fontSize="8" fill="#9ca3af" fontFamily="Times New Roman">
+        <text x="60" y="69" textAnchor="middle" fontSize="8" fill="#9ca3af" fontFamily={TNR}>
           Total
         </text>
       </svg>
@@ -581,9 +115,9 @@ function PieChart({ notStarted, inProgress, complete }: { notStarted: number; in
           <div key={s.label} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: s.color }} />
-              <span className="text-gray-600" style={{ fontFamily: '"Times New Roman", serif' }}>{s.label}</span>
+              <span className="text-gray-600" style={{ fontFamily: TNR }}>{s.label}</span>
             </div>
-            <span className="font-semibold text-gray-800" style={{ fontFamily: '"Times New Roman", serif' }}>{s.value}</span>
+            <span className="font-semibold text-gray-800" style={{ fontFamily: TNR }}>{s.value}</span>
           </div>
         ))}
       </div>
@@ -604,7 +138,14 @@ function importanceBadge(imp: string) {
   return "border-gray-300 bg-gray-50 text-gray-600";
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+function progressBarColor(pct: number) {
+  if (pct >= 100) return "bg-green-500";
+  if (pct >= 60) return "bg-blue-500";
+  if (pct >= 30) return "bg-yellow-400";
+  return "bg-red-400";
+}
+
+// ── Constants ──────────────────────────────────────────────────────────────────
 const TNR = '"Times New Roman", Times, serif';
 
 const emptyForm = {
@@ -614,8 +155,10 @@ const emptyForm = {
   importance: "Low",
   deadline: "",
   status: "Not Started",
+  subTasks: [{ title: "", completed: false }],
 };
 
+// ── Main Page ──────────────────────────────────────────────────────────────────
 export default function TaskPage() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -623,54 +166,37 @@ export default function TaskPage() {
   const [editId, setEditId] = useState("");
   const [formData, setFormData] = useState(emptyForm);
 
-//   const fetchTasks = async () => {
-//     try {
-//       const user = JSON.parse(localStorage.getItem("user") || "{}");
-//       const res = await fetch("/api/task");
-//       const data = await res.json();
-//       if (data.success) {
-//         setTasks(data.tasks.filter((t: any) => t.branchName === user.branchName));
-//       }
-//     } catch (e) { console.log(e); }
-//   };
-
-const fetchTasks = async () => {
-  try {
-    // GET LOGIN USER
-    const user = JSON.parse(
-      localStorage.getItem("user") || "{}"
-    );
-
-    // GET LOGIN USER BRANCH
-    const branchName =
-      user.branchName;
-
-    const res = await fetch(
-      "/api/task"
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-
-      // FILTER SAME BRANCH TASKS
-      const filteredTasks =
-        data.tasks.filter(
-          (task: any) =>
-            task.branchName ===
-            branchName
-        );
-
-      setTasks(filteredTasks);
+  const fetchTasks = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const res = await fetch("/api/task");
+      const data = await res.json();
+      if (data.success) {
+        setTasks(data.tasks.filter((t: any) => t.branchName === user.branchName));
+      }
+    } catch (e) {
+      console.log(e);
     }
-  } catch (error) {
-    console.log(error);
-  }
-};
-  useEffect(() => { fetchTasks(); }, []);
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   const handleChange = (e: any) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const addSubTask = () =>
+    setFormData({ ...formData, subTasks: [...formData.subTasks, { title: "", completed: false }] });
+
+  const handleSubTaskChange = (index: number, field: string, value: any) => {
+    const updated = [...formData.subTasks];
+    updated[index] = { ...updated[index], [field]: value };
+    setFormData({ ...formData, subTasks: updated });
+  };
+
+  const removeSubTask = (index: number) =>
+    setFormData({ ...formData, subTasks: formData.subTasks.filter((_: any, i: number) => i !== index) });
 
   const handleEdit = (task: any) => {
     setEditId(task._id);
@@ -681,6 +207,7 @@ const fetchTasks = async () => {
       importance: task.importance,
       deadline: task.deadline?.split("T")[0],
       status: task.status,
+      subTasks: task.subTasks?.length > 0 ? task.subTasks : [{ title: "", completed: false }],
     });
     setOpen(true);
   };
@@ -711,11 +238,13 @@ const fetchTasks = async () => {
         setFormData(emptyForm);
         fetchTasks();
       }
-    } catch { alert("Something went wrong"); }
-    finally { setLoading(false); }
+    } catch {
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Counts
   const total = tasks.length;
   const notStarted = tasks.filter((t) => t.status === "Not Started").length;
   const inProgress = tasks.filter((t) => t.status === "In Progress").length;
@@ -742,7 +271,6 @@ const fetchTasks = async () => {
 
       {/* ── Stats + Pie ── */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        {/* Stat Cards */}
         <div className="col-span-3 grid grid-cols-4 gap-4">
           {[
             { label: "Total Tasks", value: total, color: "border-gray-200 bg-white text-gray-900" },
@@ -755,7 +283,6 @@ const fetchTasks = async () => {
               <p className="text-4xl font-bold">{c.value}</p>
             </div>
           ))}
-          {/* High importance banner */}
           <div className="col-span-4 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-orange-600 opacity-80 mb-0.5">High Priority Tasks</p>
@@ -768,8 +295,6 @@ const fetchTasks = async () => {
             </svg>
           </div>
         </div>
-
-        {/* Pie Chart */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Status Overview</p>
           <PieChart notStarted={notStarted} inProgress={inProgress} complete={complete} />
@@ -781,7 +306,7 @@ const fetchTasks = async () => {
         <table className="w-full text-sm" style={{ fontFamily: TNR }}>
           <thead>
             <tr className="bg-gray-900 text-white">
-              {["Task", "Assigned To", "Importance", "Deadline", "Status", "Actions"].map((h) => (
+              {["Task & Subtasks", "Assigned To", "Importance", "Deadline", "Status", "Progress", "Actions"].map((h) => (
                 <th key={h} className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-widest">{h}</th>
               ))}
             </tr>
@@ -789,48 +314,140 @@ const fetchTasks = async () => {
           <tbody>
             {tasks.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-16 text-gray-400 italic text-base">
+                <td colSpan={7} className="text-center py-16 text-gray-400 italic text-base">
                   No tasks found. Add your first task.
                 </td>
               </tr>
             ) : (
-              tasks.map((task, i) => (
-                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-4 font-semibold text-gray-900">{task.taskTitle}</td>
-                  <td className="px-5 py-4 text-gray-500 text-xs">{task.assignTo}</td>
-                  <td className="px-5 py-4">
-                    <span className={`px-3 py-1 rounded-full border text-xs font-semibold ${importanceBadge(task.importance)}`}>
-                      {task.importance}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-gray-600 text-xs">
-                    {new Date(task.deadline).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`px-3 py-1 rounded-full border text-xs font-semibold ${statusBadge(task.status)}`}>
-                      {task.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEdit(task)}
-                        title="Edit"
-                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-blue-600 transition-all"
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(task._id)}
-                        title="Delete"
-                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 hover:bg-red-100 hover:text-red-600 text-red-600 transition-all"
-                      >
-                        <TrashIcon />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              tasks.map((task, i) => {
+                const pct = Math.min(100, Math.max(0, task.progress ?? 0));
+                const completedSubs = task.subTasks?.filter((s: any) => s.completed).length ?? 0;
+                const totalSubs = task.subTasks?.length ?? 0;
+
+                return (
+                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors align-top">
+
+                    {/* ── Task Title + Subtasks + Progress ── */}
+                    <td className="px-5 py-4 max-w-xs">
+                      {/* Title */}
+                      <p className="font-semibold text-gray-900 text-sm leading-snug">{task.taskTitle}</p>
+
+                      {/* Progress bar */}
+                      <div className="mt-2 mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Progress</span>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              pct >= 100
+                                ? "bg-green-100 text-green-700"
+                                : pct >= 60
+                                ? "bg-blue-100 text-blue-700"
+                                : pct >= 30
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {pct}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${progressBarColor(pct)}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Subtasks */}
+                      {totalSubs > 0 && (
+                        <div className="border border-gray-100 rounded-xl bg-gray-50 px-3 py-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
+                            Subtasks · {completedSubs}/{totalSubs}
+                          </p>
+                          <div className="flex flex-col gap-1">
+                            {task.subTasks.map((sub: any, si: number) => (
+                              <div key={si} className="flex items-center gap-2">
+                                <span className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                                  sub.completed
+                                    ? "bg-green-500 border-green-500"
+                                    : "bg-white border-gray-300"
+                                }`}>
+                                  {sub.completed && (
+                                    <svg width="7" height="7" viewBox="0 0 10 10" fill="none">
+                                      <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className={`text-xs leading-tight ${
+                                  sub.completed ? "line-through text-gray-400" : "text-gray-600"
+                                }`}>
+                                  {sub.title || <span className="italic text-gray-300">Untitled</span>}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-4 text-gray-500 text-xs align-top pt-5">{task.assignTo}</td>
+                    <td className="px-5 py-4 align-top pt-5">
+                      <span className={`px-3 py-1 rounded-full border text-xs font-semibold ${importanceBadge(task.importance)}`}>
+                        {task.importance}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-gray-600 text-xs align-top pt-5 whitespace-nowrap">
+                      {new Date(task.deadline).toLocaleDateString("en-IN", {
+                        day: "2-digit", month: "short", year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-5 py-4 align-top pt-5">
+                      <span className={`px-3 py-1 rounded-full border text-xs font-semibold ${statusBadge(task.status)}`}>
+                        {task.status}
+                      </span>
+                    </td>
+
+                    {/* Progress column (standalone) */}
+                    <td className="px-5 py-4 align-top pt-5 w-28">
+                      <div className="flex flex-col gap-1">
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className={`h-2.5 rounded-full transition-all duration-500 ${progressBarColor(pct)}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-bold ${
+                          pct >= 100 ? "text-green-600"
+                          : pct >= 60 ? "text-blue-600"
+                          : pct >= 30 ? "text-yellow-600"
+                          : "text-red-500"
+                        }`}>
+                          {pct}%
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-5 py-4 align-top pt-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEdit(task)}
+                          title="Edit"
+                          className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-blue-600 transition-all"
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(task._id)}
+                          title="Delete"
+                          className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 hover:bg-red-100 hover:text-red-600 text-red-600 transition-all"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -839,10 +456,12 @@ const fetchTasks = async () => {
       {/* ── Modal ── */}
       {open && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden" style={{ fontFamily: TNR }}>
-
+          <div
+            className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            style={{ fontFamily: TNR, maxHeight: "90vh" }}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{editId ? "Edit Task" : "Create Task"}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">
@@ -857,80 +476,177 @@ const fetchTasks = async () => {
               </button>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
-              <input
-                type="text" name="taskTitle" placeholder="Task Title"
-                value={formData.taskTitle} onChange={handleChange}
-                className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-gray-900 placeholder-gray-400 text-sm"
-                style={{ fontFamily: TNR }}
-              />
-              <input
-                type="email" name="assignTo" placeholder="Assign To (Email)"
-                value={formData.assignTo} onChange={handleChange}
-                className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-gray-900 placeholder-gray-400 text-sm"
-                style={{ fontFamily: TNR }}
-              />
-              <textarea
-                name="description" placeholder="Description"
-                value={formData.description} onChange={handleChange}
-                rows={3}
-                className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-gray-900 placeholder-gray-400 text-sm col-span-2 resize-none"
-                style={{ fontFamily: TNR }}
-              />
+            {/* Scrollable form body */}
+            <div className="overflow-y-auto flex-1">
+              <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
 
-              {/* Importance */}
-              <select
-                name="importance" value={formData.importance} onChange={handleChange}
-                className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-sm"
-                style={{ fontFamily: TNR,
-                  color: formData.importance === "High" ? "#b91c1c"
-                       : formData.importance === "Medium" ? "#92400e"
-                       : "#374151"
-                }}
-              >
-                <option value="Low">🟢 Low</option>
-                <option value="Medium">🟡 Medium</option>
-                <option value="High">🔴 High</option>
-              </select>
+                {/* ── Section: Basic Info ── */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Basic Info</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text" name="taskTitle" placeholder="Task Title" required
+                      value={formData.taskTitle} onChange={handleChange}
+                      className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-gray-900 placeholder-gray-400 text-sm col-span-2"
+                      style={{ fontFamily: TNR }}
+                    />
+                    <input
+                      type="email" name="assignTo" placeholder="Assign To (Email)"
+                      value={formData.assignTo} onChange={handleChange}
+                      className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-gray-900 placeholder-gray-400 text-sm col-span-2"
+                      style={{ fontFamily: TNR }}
+                    />
+                    <textarea
+                      name="description" placeholder="Task description…"
+                      value={formData.description} onChange={handleChange}
+                      rows={3}
+                      className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-gray-900 placeholder-gray-400 text-sm col-span-2 resize-none"
+                      style={{ fontFamily: TNR }}
+                    />
+                  </div>
+                </div>
 
-              <input
-                type="date" name="deadline" value={formData.deadline} onChange={handleChange}
-                className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-sm text-gray-900"
-                style={{ fontFamily: TNR }}
-              />
+                {/* ── Section: Priority & Schedule ── */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Priority & Schedule</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* Importance */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-gray-500 pl-1">Importance</label>
+                      <select
+                        name="importance" value={formData.importance} onChange={handleChange}
+                        className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-sm"
+                        style={{
+                          fontFamily: TNR,
+                          color:
+                            formData.importance === "High" ? "#b91c1c"
+                            : formData.importance === "Medium" ? "#92400e"
+                            : "#374151",
+                        }}
+                      >
+                        <option value="Low">🟢 Low</option>
+                        <option value="Medium">🟡 Medium</option>
+                        <option value="High">🔴 High</option>
+                      </select>
+                    </div>
 
-              {/* Status */}
-              <select
-                name="status" value={formData.status} onChange={handleChange}
-                className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-sm col-span-2"
-                style={{ fontFamily: TNR,
-                  color: formData.status === "Complete" ? "#15803d"
-                       : formData.status === "In Progress" ? "#1d4ed8"
-                       : "#dc2626"
-                }}
-              >
-                <option value="Not Started">🔴 Not Started</option>
-                <option value="In Progress">🔵 In Progress</option>
-                <option value="Complete">🟢 Complete</option>
-              </select>
+                    {/* Deadline */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-gray-500 pl-1">Deadline</label>
+                      <input
+                        type="date" name="deadline" value={formData.deadline} onChange={handleChange}
+                        className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-sm text-gray-900"
+                        style={{ fontFamily: TNR }}
+                      />
+                    </div>
 
-              <button
-                type="submit" disabled={loading}
-                className="col-span-2 bg-black hover:bg-gray-800 disabled:opacity-50 text-white py-3.5 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                style={{ fontFamily: TNR }}
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" />
-                      <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
-                    {editId ? "Updating..." : "Creating..."}
-                  </>
-                ) : editId ? "Update Task" : "Create Task"}
-              </button>
-            </form>
+                    {/* Status */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-gray-500 pl-1">Status</label>
+                      <select
+                        name="status" value={formData.status} onChange={handleChange}
+                        className="border border-gray-200 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:border-black focus:bg-white transition-all text-sm"
+                        style={{
+                          fontFamily: TNR,
+                          color:
+                            formData.status === "Complete" ? "#15803d"
+                            : formData.status === "In Progress" ? "#1d4ed8"
+                            : "#dc2626",
+                        }}
+                      >
+                        <option value="Not Started">🔴 Not Started</option>
+                        <option value="In Progress">🔵 In Progress</option>
+                        <option value="Complete">🟢 Complete</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Section: Subtasks ── */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+                      Subtasks
+                      <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] normal-case tracking-normal">
+                        {formData.subTasks.length}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={addSubTask}
+                      className="flex items-center gap-1.5 text-xs bg-gray-900 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-all"
+                      style={{ fontFamily: TNR }}
+                    >
+                      <PlusIcon /> Add Subtask
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {formData.subTasks.map((sub: any, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5"
+                      >
+                        {/* Checkbox */}
+                        <button
+                          type="button"
+                          onClick={() => handleSubTaskChange(index, "completed", !sub.completed)}
+                          className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                            sub.completed
+                              ? "bg-green-500 border-green-500"
+                              : "bg-white border-gray-300 hover:border-green-400"
+                          }`}
+                        >
+                          {sub.completed && (
+                            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                              <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </button>
+
+                        {/* Input */}
+                        <input
+                          type="text"
+                          placeholder={`Subtask ${index + 1}`}
+                          value={sub.title}
+                          onChange={(e) => handleSubTaskChange(index, "title", e.target.value)}
+                          className={`flex-1 bg-transparent outline-none text-sm placeholder-gray-400 transition-all ${
+                            sub.completed ? "line-through text-gray-400" : "text-gray-800"
+                          }`}
+                          style={{ fontFamily: TNR }}
+                        />
+
+                        {/* Remove */}
+                        <button
+                          type="button"
+                          onClick={() => removeSubTask(index)}
+                          className="w-6 h-6 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-100 hover:text-red-500 transition-all flex-shrink-0"
+                        >
+                          <CloseIcon />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Submit ── */}
+                <button
+                  type="submit" disabled={loading}
+                  className="bg-black hover:bg-gray-800 disabled:opacity-50 text-white py-3.5 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 mt-1"
+                  style={{ fontFamily: TNR }}
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" />
+                        <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      {editId ? "Updating…" : "Creating…"}
+                    </>
+                  ) : editId ? "Update Task" : "Create Task"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
+
+interface SubTask {
+  _id: string;
+  title: string;
+  completed: boolean;
+}
 
 interface Task {
   _id: string;
@@ -11,69 +17,16 @@ interface Task {
   deadline: string;
   status: string;
   branchName: string;
+  progress: number;
+  subTasks: SubTask[];
 }
 
 const tnr = { fontFamily: "'Times New Roman', Times, serif" } as React.CSSProperties;
 
-function ImportanceBadge({ importance }: { importance: string }) {
-  const map: Record<string, string> = {
-    High: "border-red-400 bg-red-50 text-red-600",
-    Medium: "border-yellow-400 bg-yellow-50 text-yellow-600",
-    Low: "border-green-400 bg-green-50 text-green-600",
-  };
-  const cls = map[importance] ?? "border-gray-300 bg-gray-50 text-gray-600";
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold ${cls}`}
-      style={tnr}
-    >
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${
-          importance === "High"
-            ? "bg-red-500"
-            : importance === "Medium"
-            ? "bg-yellow-500"
-            : "bg-green-500"
-        }`}
-      />
-      {importance}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    Completed: "border-emerald-400 bg-emerald-50 text-emerald-600",
-    "In Progress": "border-blue-400 bg-blue-50 text-blue-600",
-    Pending: "border-orange-400 bg-orange-50 text-orange-600",
-    Cancelled: "border-gray-400 bg-gray-50 text-gray-500",
-  };
-  const cls = map[status] ?? "border-gray-300 bg-gray-50 text-gray-600";
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold ${cls}`}
-      style={tnr}
-    >
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${
-          status === "Completed"
-            ? "bg-emerald-500"
-            : status === "In Progress"
-            ? "bg-blue-500"
-            : status === "Pending"
-            ? "bg-orange-500"
-            : "bg-gray-400"
-        }`}
-      />
-      {status}
-    </span>
-  );
-}
-
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function formatDate(dateStr: string) {
   if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -81,41 +34,95 @@ function formatDate(dateStr: string) {
 }
 
 function isOverdue(deadline: string, status: string) {
-  if (!deadline || status === "Completed" || status === "Cancelled") return false;
+  if (!deadline || status === "Complete" || status === "Cancelled") return false;
   return new Date(deadline) < new Date();
 }
 
-// Icons
+function progressColor(pct: number) {
+  if (pct >= 100) return { bar: "bg-emerald-500", text: "text-emerald-600", ring: "bg-emerald-100" };
+  if (pct >= 60)  return { bar: "bg-blue-500",    text: "text-blue-600",    ring: "bg-blue-100"    };
+  if (pct >= 30)  return { bar: "bg-amber-400",   text: "text-amber-600",   ring: "bg-amber-100"   };
+  return               { bar: "bg-red-400",     text: "text-red-600",     ring: "bg-red-100"     };
+}
+
+// ── Badges ─────────────────────────────────────────────────────────────────────
+function ImportanceBadge({ importance }: { importance: string }) {
+  const map: Record<string, { cls: string; dot: string }> = {
+    High:   { cls: "border-red-300 bg-red-50 text-red-700",       dot: "bg-red-500"    },
+    Medium: { cls: "border-amber-300 bg-amber-50 text-amber-700", dot: "bg-amber-400"  },
+    Low:    { cls: "border-green-300 bg-green-50 text-green-700", dot: "bg-green-500"  },
+  };
+  const { cls, dot } = map[importance] ?? { cls: "border-gray-200 bg-gray-50 text-gray-600", dot: "bg-gray-400" };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${cls}`} style={tnr}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      {importance}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { cls: string; dot: string }> = {
+    Complete:    { cls: "border-emerald-300 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+    "In Progress": { cls: "border-blue-300 bg-blue-50 text-blue-700",         dot: "bg-blue-500"    },
+    Pending:     { cls: "border-orange-300 bg-orange-50 text-orange-700",    dot: "bg-orange-400"  },
+    Cancelled:   { cls: "border-gray-300 bg-gray-50 text-gray-500",          dot: "bg-gray-400"    },
+  };
+  const { cls, dot } = map[status] ?? { cls: "border-gray-200 bg-gray-50 text-gray-600", dot: "bg-gray-400" };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${cls}`} style={tnr}>
+      <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${dot}`} />
+      {status}
+    </span>
+  );
+}
+
+// ── Icons ──────────────────────────────────────────────────────────────────────
 const CalendarIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
     <line x1="16" y1="2" x2="16" y2="6"/>
     <line x1="8" y1="2" x2="8" y2="6"/>
     <line x1="3" y1="10" x2="21" y2="10"/>
   </svg>
 );
 
-const BranchIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="6" y1="3" x2="6" y2="15"/>
-    <circle cx="18" cy="6" r="3"/>
-    <circle cx="6" cy="18" r="3"/>
-    <path d="M18 9a9 9 0 0 1-9 9"/>
-  </svg>
-);
+// ── Progress Ring (for card header) ───────────────────────────────────────────
+function ProgressRing({ pct }: { pct: number }) {
+  const r = 20;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  const { text } = progressColor(pct);
+  return (
+    <div className="relative w-14 h-14 flex-shrink-0">
+      <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90">
+        <circle cx="28" cy="28" r={r} fill="none" stroke="#f3f4f6" strokeWidth="5" />
+        <circle
+          cx="28" cy="28" r={r} fill="none"
+          stroke={pct >= 100 ? "#10b981" : pct >= 60 ? "#3b82f6" : pct >= 30 ? "#f59e0b" : "#f87171"}
+          strokeWidth="5"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={`text-[10px] font-bold leading-none ${text}`} style={tnr}>{pct}%</span>
+      </div>
+    </div>
+  );
+}
 
+// ── Main Page ──────────────────────────────────────────────────────────────────
 export default function EmployeeTasksPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const employeeId = params.id;
+  const { id: employeeId } = use(params);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
 
   async function fetchTasks() {
     try {
@@ -134,62 +141,107 @@ export default function EmployeeTasksPage({
     }
   }
 
-  // Stats
-  const completed = tasks.filter((t) => t.status === "Completed").length;
+  async function toggleSubTask(taskId: string, subTaskId: string) {
+    try {
+      let currentTask: Task | null = null;
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => {
+          if (task._id !== taskId) return task;
+
+          const updatedSubTasks = task.subTasks.map((sub) =>
+            sub._id === subTaskId ? { ...sub, completed: !sub.completed } : sub
+          );
+
+          const completedCount = updatedSubTasks.filter((s) => s.completed).length;
+          const progress = Math.round((completedCount / updatedSubTasks.length) * 100);
+          const status =
+            progress === 100 ? "Complete"
+            : progress > 0   ? "In Progress"
+            :                  "Pending";
+
+          const nextTask = { ...task, subTasks: updatedSubTasks, progress, status };
+          currentTask = nextTask;
+          return nextTask;
+        })
+      );
+
+      if (!currentTask) return;
+
+      await fetch(`/api/task/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currentTask),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => { void fetchTasks(); }, []);
+
+  const completed  = tasks.filter((t) => t.status === "Complete").length;
   const inProgress = tasks.filter((t) => t.status === "In Progress").length;
-  const pending = tasks.filter((t) => t.status === "Pending").length;
+  const pending    = tasks.filter((t) => t.status === "Pending").length;
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen bg-white flex items-center justify-center"
-        style={tnr}
-      >
+      <div className="min-h-screen bg-white flex items-center justify-center" style={tnr}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
-          <span className="text-gray-500 text-base">Loading tasks...</span>
+          <div className="w-9 h-9 border-2 border-black border-t-transparent rounded-full animate-spin" />
+          <span className="text-gray-400 text-sm">Loading your tasks…</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-black p-6" style={tnr}>
+    <div className="min-h-screen bg-white text-black px-6 py-8" style={tnr}>
 
-      {/* HEADER */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-black tracking-tight" style={tnr}>
-          My Tasks
-        </h1>
-        <p className="text-gray-400 mt-1 text-sm" style={tnr}>
-          Employee ID: <span className="text-gray-600 font-semibold">{employeeId}</span>
-        </p>
-      </div>
-
-      {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <div className="border border-gray-200 rounded-2xl p-5 bg-white shadow-sm">
-          <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-1" style={tnr}>Total</p>
-          <p className="text-4xl font-bold text-black" style={tnr}>{tasks.length}</p>
+      {/* ── Header ── */}
+      <div className="mb-8 flex items-end justify-between border-b border-gray-100 pb-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1" style={tnr}>
+            Employee · {employeeId}
+          </p>
+          <h1 className="text-4xl font-bold text-black" style={tnr}>My Tasks</h1>
         </div>
-        <div className="border border-emerald-200 rounded-2xl p-5 bg-white shadow-sm">
-          <p className="text-xs uppercase tracking-widest text-emerald-500 font-semibold mb-1" style={tnr}>Completed</p>
-          <p className="text-4xl font-bold text-emerald-600" style={tnr}>{completed}</p>
-        </div>
-        <div className="border border-blue-200 rounded-2xl p-5 bg-white shadow-sm">
-          <p className="text-xs uppercase tracking-widest text-blue-500 font-semibold mb-1" style={tnr}>In Progress</p>
-          <p className="text-4xl font-bold text-blue-600" style={tnr}>{inProgress}</p>
-        </div>
-        <div className="border border-orange-200 rounded-2xl p-5 bg-white shadow-sm">
-          <p className="text-xs uppercase tracking-widest text-orange-400 font-semibold mb-1" style={tnr}>Pending</p>
-          <p className="text-4xl font-bold text-orange-500" style={tnr}>{pending}</p>
+        <div className="text-right">
+          <p className="text-xs text-gray-400" style={tnr}>Total assigned</p>
+          <p className="text-3xl font-bold text-black" style={tnr}>{tasks.length}</p>
         </div>
       </div>
 
-      {/* EMPTY STATE */}
+      {/* ── Summary Cards ── */}
+      <div className="grid grid-cols-3 gap-4 mb-10">
+        {[
+          { label: "Completed",   value: completed,  border: "border-emerald-200", bg: "bg-emerald-50",  num: "text-emerald-700", dot: "bg-emerald-400" },
+          { label: "In Progress", value: inProgress, border: "border-blue-200",    bg: "bg-blue-50",     num: "text-blue-700",    dot: "bg-blue-400"    },
+          { label: "Pending",     value: pending,    border: "border-orange-200",  bg: "bg-orange-50",   num: "text-orange-700",  dot: "bg-orange-400"  },
+        ].map((c) => (
+          <div key={c.label} className={`rounded-2xl border ${c.border} ${c.bg} px-6 py-5 flex items-center justify-between`}>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`w-2 h-2 rounded-full ${c.dot}`} />
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-500" style={tnr}>{c.label}</p>
+              </div>
+              <p className={`text-4xl font-bold ${c.num}`} style={tnr}>{c.value}</p>
+            </div>
+            {/* mini bar */}
+            <div className="w-1.5 h-16 rounded-full bg-white/70 overflow-hidden flex flex-col-reverse">
+              <div
+                className={`rounded-full ${c.dot}`}
+                style={{ height: tasks.length ? `${Math.round((c.value / tasks.length) * 100)}%` : "0%", transition: "height 0.6s ease" }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Empty State ── */}
       {tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 border border-dashed border-gray-200 rounded-2xl">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" className="mb-4">
+        <div className="flex flex-col items-center justify-center py-28 border border-dashed border-gray-200 rounded-2xl">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.2" className="mb-5">
             <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
             <rect x="9" y="3" width="6" height="4" rx="1"/>
             <line x1="9" y1="12" x2="15" y2="12"/>
@@ -200,76 +252,176 @@ export default function EmployeeTasksPage({
         </div>
       ) : (
 
-        /* TASK CARDS GRID */
+        /* ── Task Cards ── */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {tasks.map((task) => {
-            const overdue = isOverdue(task.deadline, task.status);
+            const overdue   = isOverdue(task.deadline, task.status);
+            const pct       = task.progress ?? 0;
+            const pc        = progressColor(pct);
+            const doneCount = task.subTasks?.filter((s) => s.completed).length ?? 0;
+            const subCount  = task.subTasks?.length ?? 0;
+
             return (
               <div
                 key={task._id}
-                className={`bg-white rounded-2xl border shadow-sm flex flex-col gap-4 p-5 hover:shadow-md transition-shadow ${
+                className={`bg-white rounded-2xl border flex flex-col shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
                   overdue ? "border-red-200" : "border-gray-100"
                 }`}
               >
-                {/* Card Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <h2
-                    className="text-lg font-bold text-black leading-snug flex-1"
-                    style={tnr}
-                  >
-                    {task.taskTitle}
-                  </h2>
-                  {overdue && (
-                    <span
-                      className="shrink-0 text-xs font-bold text-red-500 border border-red-300 bg-red-50 px-2 py-0.5 rounded-full"
-                      style={tnr}
-                    >
-                      Overdue
-                    </span>
-                  )}
-                </div>
+                {/* ── Colour accent strip ── */}
+                <div className={`h-1 w-full ${pc.bar}`} />
 
-                {/* Description */}
-                {task.description && (
-                  <p
-                    className="text-gray-500 text-sm leading-relaxed line-clamp-3"
-                    style={tnr}
-                  >
-                    {task.description}
-                  </p>
-                )}
+                <div className="flex flex-col gap-0 p-5 flex-1">
 
-                {/* Divider */}
-                <div className="border-t border-gray-100" />
-
-                {/* Badges Row */}
-                <div className="flex flex-wrap gap-2">
-                  <ImportanceBadge importance={task.importance} />
-                  <StatusBadge status={task.status} />
-                </div>
-
-                {/* Meta Info */}
-                <div className="flex flex-col gap-2">
-                  {/* Deadline */}
-                  <div className="flex items-center gap-2">
-                    <span className={overdue ? "text-red-400" : "text-gray-400"}>
-                      <CalendarIcon />
-                    </span>
-                    <span
-                      className={`text-sm font-medium ${overdue ? "text-red-500" : "text-gray-600"}`}
-                      style={tnr}
-                    >
-                      {formatDate(task.deadline)}
-                    </span>
+                  {/* ── Card Header: title + progress ring ── */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-base font-bold text-black leading-snug" style={tnr}>
+                        {task.taskTitle}
+                      </h2>
+                      {overdue && (
+                        <span className="inline-block mt-1 text-[10px] font-bold text-red-500 border border-red-300 bg-red-50 px-2 py-0.5 rounded-full" style={tnr}>
+                          ⚠ Overdue
+                        </span>
+                      )}
+                    </div>
+                    <ProgressRing pct={pct} />
                   </div>
 
-                  {/* Branch */}
-                  {/* <div className="flex items-center gap-2 text-gray-400">
-                    <BranchIcon />
-                    <span className="text-sm text-gray-500" style={tnr}>
-                      {task.branchName}
+                  {/* ── Progress bar ── */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400" style={tnr}>Progress</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pc.ring} ${pc.text}`} style={tnr}>
+                        {pct === 100 ? "Done!" : pct === 0 ? "Not started" : `${pct}%`}
+                      </span>
+                    </div>
+                    {/* Segmented bar */}
+                    <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${pc.bar}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    {/* Tick marks at 25/50/75 */}
+                    <div className="relative w-full flex justify-between mt-0.5 px-0">
+                      {[25, 50, 75].map((tick) => (
+                        <div key={tick} className="flex flex-col items-center" style={{ width: 0, marginLeft: `${tick}%`, position: "absolute", left: `${tick}%` }}>
+                          <div className="w-px h-1.5 bg-gray-200" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Subtasks ── */}
+                  {subCount > 0 && (
+                    <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50 overflow-hidden">
+                      {/* Subtask header */}
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-white">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400" style={tnr}>
+                          Subtasks
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {/* Mini progress dots */}
+                          <div className="flex gap-0.5">
+                            {task.subTasks.map((s) => (
+                              <div
+                                key={s._id}
+                                className={`w-1.5 h-1.5 rounded-full transition-all ${s.completed ? "bg-emerald-500" : "bg-gray-200"}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-semibold text-gray-500" style={tnr}>
+                            {doneCount}/{subCount}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Subtask list */}
+                      <div className="flex flex-col divide-y divide-gray-100">
+                        {task.subTasks.map((sub, idx) => (
+                          <label
+                            key={sub._id}
+                            className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white transition-colors group"
+                          >
+                            {/* Custom checkbox */}
+                            <button
+                              type="button"
+                              onClick={() => toggleSubTask(task._id, sub._id)}
+                              className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                                sub.completed
+                                  ? "bg-emerald-500 border-emerald-500"
+                                  : "bg-white border-gray-300 group-hover:border-emerald-400"
+                              }`}
+                            >
+                              {sub.completed && (
+                                <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                                  <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </button>
+
+                            {/* Step number */}
+                            <span className={`text-[10px] font-bold w-4 text-center flex-shrink-0 ${sub.completed ? "text-emerald-400" : "text-gray-300"}`} style={tnr}>
+                              {idx + 1}
+                            </span>
+
+                            {/* Label */}
+                            <span
+                              className={`text-sm flex-1 leading-snug transition-all ${
+                                sub.completed ? "line-through text-gray-400" : "text-gray-700"
+                              }`}
+                              style={tnr}
+                            >
+                              {sub.title}
+                            </span>
+
+                            {sub.completed && (
+                              <span className="text-[10px] text-emerald-500 font-semibold flex-shrink-0" style={tnr}>✓</span>
+                            )}
+                          </label>
+                        ))}
+                      </div>
+
+                      {/* Subtask completion bar */}
+                      <div className="h-1 bg-gray-100">
+                        <div
+                          className="h-1 bg-emerald-400 transition-all duration-500"
+                          style={{ width: subCount ? `${Math.round((doneCount / subCount) * 100)}%` : "0%" }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Description ── */}
+                  {task.description && (
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4 italic" style={tnr}>
+                      {task.description}
+                    </p>
+                  )}
+
+                  {/* ── Spacer ── */}
+                  <div className="flex-1" />
+
+                  {/* ── Divider ── */}
+                  <div className="border-t border-gray-100 mb-3" />
+
+                  {/* ── Badges ── */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <ImportanceBadge importance={task.importance} />
+                    <StatusBadge status={task.status} />
+                  </div>
+
+                  {/* ── Deadline ── */}
+                  <div className={`flex items-center gap-2 ${overdue ? "text-red-400" : "text-gray-400"}`}>
+                    <CalendarIcon />
+                    <span
+                      className={`text-xs font-medium ${overdue ? "text-red-500 font-semibold" : "text-gray-500"}`}
+                      style={tnr}
+                    >
+                      {overdue ? "Was due " : "Due "}{formatDate(task.deadline)}
                     </span>
-                  </div> */}
+                  </div>
                 </div>
               </div>
             );

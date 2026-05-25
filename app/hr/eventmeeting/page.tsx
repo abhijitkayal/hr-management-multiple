@@ -165,12 +165,42 @@ const fetchMeetings = async () => {
       );
       const data = await res.json();
       alert(data.message);
-      if (data.success) {
-        setOpen(false);
-        setEditId("");
-        setFormData(emptyForm);
-        fetchMeetings();
-      }
+    if (data.success) {
+
+  // CREATE NOTIFICATION
+  await fetch(
+    "/api/notification",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify({
+        title:
+          "New Meeting Scheduled",
+
+        message:
+          `${formData.title} meeting scheduled on ${formData.date} at ${formData.time}`,
+
+        type: "meeting",
+
+        branchName:
+          user.branchName,
+      }),
+    }
+  );
+
+  setOpen(false);
+
+  setEditId("");
+
+  setFormData(
+    emptyForm
+  );
+
+  fetchMeetings();
+}
     } catch { alert("Something went wrong"); }
     finally { setLoading(false); }
   };

@@ -11,7 +11,6 @@ import {
   IconFileAi,
   IconFileDescription,
   IconFileWord,
-  IconFolder,
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
@@ -36,18 +35,27 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
+import { useState } from "react"
+
+// type SidebarUser = {
+//   name?: string
+//   email?: string
+//   avatar?: string
+//   role?: string
+//   id?: string
+// }
 
 type SidebarUser = {
+  id?: string
   name?: string
   email?: string
   avatar?: string
   role?: string
-  id?: string
+  branchName?: string
 }
-
 const emptySidebarUser = {
+  id: "",
   name: "",
   email: "",
   avatar: "",
@@ -192,41 +200,76 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const router = useRouter();
-    const [user, setUser] =
-      useState<SidebarUser | null>(null);
-  
-    useEffect(() => {
-      const storedUser =
-        localStorage.getItem(
-          "user"
-        );
-  
-      if (!storedUser) {
-        router.push("/login");
-  
-        return;
-      }
-  
-      const parsedUser =
-        JSON.parse(storedUser);
-  
-      // ROLE CHECK
-      if (
-        parsedUser.role !==
-        "hr"
-      ) {
-        router.push("/login");
-  
-        return;
-      }
-  
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUser(parsedUser);
-      console.log(parsedUser);
-    }, [router]);
+  const pathname = usePathname();
+const [
+  user,
+  setUser,
+] = useState<SidebarUser | null>(null);
 
-  const loginId = user?.id || "";
+const [
+  settings,
+  setSettings,
+] = useState<any>(null);
+React.useEffect(() => {
+
+  async function fetchData() {
+
+    try {
+
+      // GET USER
+      const storedUser =
+        JSON.parse(
+          localStorage.getItem(
+            "user"
+          ) || "{}"
+        );
+
+      setUser(
+        storedUser
+      );
+
+      // FETCH SETTINGS
+      const res =
+        await fetch(
+          `/api/settings?branchName=${storedUser.branchName}`
+        );
+
+      const data =
+        await res.json();
+
+      if (data.success) {
+
+        setSettings(
+          data.setting
+        );
+      }
+
+    } catch (error) {
+
+      console.log(error);
+    }
+  }
+
+  fetchData();
+
+}, []);
+
+  const pathParts = pathname.split("/").filter(Boolean);
+  const topLevelRoutes = new Set([
+    "dashboard",
+    "employee",
+    "tasks",
+    "eventmeeting",
+    "jobposting",
+    "expense",
+    "payroll",
+    "training",
+    "interview",
+  ]);
+
+  const loginId = pathParts[1] && !topLevelRoutes.has(pathParts[1])
+    ? pathParts[1]
+    : "";
 
   const basePath = loginId
     ? `/hr/${loginId}`
@@ -237,14 +280,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     url: `${basePath}${item.url.replace("/hr", "")}`,
   }));
 
-  const sidebarUser = user
-    ? {
-        name: user.name || "",
-        email: user.email || "",
-        avatar: user.avatar || "",
-        branchName: "",
-      }
-    : emptySidebarUser;
+ const sidebarUser = user
+  ? {
+      id: user.id || "",
+
+      name: user.name || "",
+
+      email: user.email || "",
+
+      avatar: user.avatar || "",
+
+      branchName:
+        user.branchName || "",
+    }
+  : emptySidebarUser;
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -254,10 +303,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="#">
-                <IconInnerShadowTop className="size-5!" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+              <a
+  href="#"
+  className="flex items-center gap-2"
+>
+
+  {settings?.logo ? (
+
+    <img
+      src={settings.logo}
+      alt="logo"
+      className="w-8 h-8 rounded-lg object-cover"
+    />
+
+  ) : (
+
+    <IconInnerShadowTop className="size-5!" />
+
+  )}
+
+  <span className="text-base font-semibold">
+
+    {settings?.businessName ||
+      "Acme Inc."}
+
+  </span>
+
+</a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

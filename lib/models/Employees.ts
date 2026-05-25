@@ -58,7 +58,15 @@ const employeeSchema = new Schema(
     createdBy: {
       type: String,
     },
+    resetToken: {
+  type: String,
+},
+
+resetTokenExpiry: {
+  type: Date,
+},
   },
+  
   {
     timestamps: true,
   }

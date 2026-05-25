@@ -598,11 +598,13 @@
 
 
 
-
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Plus, Users, Eye, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Building2, Plus, Users, Eye, X, MapPin, Phone, Mail, Lock, User } from "lucide-react";
+
+const TNR = { fontFamily: "'Times New Roman', Times, serif" } as React.CSSProperties;
 
 interface Branch {
   _id: string;
@@ -611,13 +613,28 @@ interface Branch {
   phone: string;
   email: string;
   password: string;
-  managerName: string;
+  // managerName: string;
   hrName: string;
   totalEmployees: number;
   active: boolean;
 }
 
+function StatusBadge({ active }: { active: boolean }) {
+  return active ? (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700" style={TNR}>
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      Active
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-red-200 bg-red-50 text-red-600" style={TNR}>
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+      Inactive
+    </span>
+  );
+}
+
 export default function BranchPage() {
+  const router = useRouter();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [branchName, setBranchName] = useState("");
@@ -625,8 +642,9 @@ export default function BranchPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [managerName, setManagerName] = useState("");
+  // const [managerName, setManagerName] = useState("");
   const [hrName, setHrName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   async function fetchBranches() {
     try {
@@ -637,392 +655,223 @@ export default function BranchPage() {
     return [] as Branch[];
   }
 
-  useEffect(() => {
-    void fetchBranches().then(setBranches);
-  }, []);
+  useEffect(() => { void fetchBranches().then(setBranches); }, []);
 
   async function createBranch() {
+    if (!branchName || !address) return alert("Fill all required fields");
     try {
-      if (!branchName || !address) return alert("Fill all required fields");
+      setCreating(true);
       const res = await fetch("/api/branches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ branchName, address, phone, email, password, managerName, hrName }),
+        body: JSON.stringify({ branchName, address, phone, email, password, hrName }),
       });
       const data = await res.json();
       if (!data.success) return alert("Create failed");
       alert("Branch Created");
       setShowModal(false);
       setBranchName(""); setAddress(""); setPhone("");
-      setEmail(""); setPassword(""); setManagerName(""); setHrName("");
+      setEmail(""); setPassword("");  setHrName("");
       void fetchBranches().then(setBranches);
     } catch (e) { console.log(e); }
+    finally { setCreating(false); }
   }
+
+  async function openHrDashboard(branchNameToFind: string) {
+    try {
+      const response = await fetch(
+        `/api/hr-profile?branchName=${encodeURIComponent(branchNameToFind)}`
+      );
+
+      const data = await response.json();
+
+      if (!data.success || !data.hrUserId) {
+        alert(data.message || "HR profile not found");
+        return;
+      }
+
+      router.push(`/hr/${data.hrUserId}`);
+    } catch (error) {
+      console.log(error);
+      alert("Unable to open HR dashboard");
+    }
+  }
+
+  const active   = branches.filter((b) => b.active).length;
+  const inactive = branches.filter((b) => !b.active).length;
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}@keyframes spin{to{transform:rotate(360deg)}}.anim-fadeUp{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both}.anim-scaleIn{animation:scaleIn .25s cubic-bezier(.22,1,.36,1) both}.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}`}</style>
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      <div className="min-h-screen bg-white px-6 py-8" style={TNR}>
 
-        .bp-root {
-          padding: 32px;
-          background: #fff;
-          min-height: 100vh;
-          color: #000;
-          font-family: 'Outfit', sans-serif;
-        }
-
-        /* HEADER */
-        .bp-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 32px;
-        }
-
-        .bp-title {
-          font-size: 28px;
-          font-weight: 800;
-          color: #000;
-          letter-spacing: -0.5px;
-          margin-bottom: 4px;
-        }
-
-        .bp-subtitle {
-          color: #888;
-          font-size: 13px;
-        }
-
-        .bp-create-btn {
-          background: #d4841a;
-          border: none;
-          color: #fff;
-          padding: 12px 20px;
-          border-radius: 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-family: 'Outfit', sans-serif;
-          font-size: 14px;
-          font-weight: 700;
-          transition: background 0.15s, transform 0.1s;
-        }
-
-        .bp-create-btn:hover { background: #e8951f; transform: translateY(-1px); }
-        .bp-create-btn:active { transform: translateY(0); }
-
-        /* TABLE WRAPPER */
-        .bp-table-wrap {
-          border: 1px solid #e5e5e5;
-          border-radius: 18px;
-          overflow: hidden;
-        }
-
-        .bp-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .bp-table thead tr {
-          background: #f8f8f8;
-        }
-
-        .bp-table th {
-          padding: 14px 20px;
-          text-align: left;
-          font-size: 11px;
-          font-weight: 600;
-          color: #999;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-
-        .bp-table tbody tr {
-          border-top: 1px solid #f0f0f0;
-          transition: background 0.1s;
-        }
-
-        .bp-table tbody tr:hover { background: #fafafa; }
-
-        .bp-table td {
-          padding: 16px 20px;
-          color: #000;
-          font-size: 14px;
-          vertical-align: middle;
-        }
-
-        /* Branch cell */
-        .bp-branch-cell {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .bp-branch-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 12px;
-          background: #d4841a;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-          flex-shrink: 0;
-        }
-
-        .bp-branch-name {
-          font-weight: 600;
-          color: #000;
-          font-size: 14px;
-          margin-bottom: 2px;
-        }
-
-        .bp-branch-addr {
-          font-size: 12px;
-          color: #999;
-        }
-
-        .bp-employees {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #555;
-          font-size: 14px;
-        }
-
-        .bp-status-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 5px 12px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        .bp-status-badge.active {
-          background: #f0fdf4;
-          color: #16a34a;
-          border: 1px solid #bbf7d0;
-        }
-
-        .bp-status-badge.inactive {
-          background: #fef2f2;
-          color: #dc2626;
-          border: 1px solid #fecaca;
-        }
-
-        .bp-status-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-        }
-
-        .bp-status-dot.active { background: #16a34a; }
-
-        .bp-status-dot.inactive { background: #dc2626; }
-
-        .bp-view-btn {
-          width: 38px;
-          height: 38px;
-          border-radius: 10px;
-          border: 1px solid #e5e5e5;
-          background: #fff;
-          color: #2563eb;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.12s, border-color 0.12s;
-        }
-
-        .bp-view-btn:hover { background: #eff6ff; border-color: #bfdbfe; }
-
-        /* MODAL */
-        .bp-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.35);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 999;
-          backdrop-filter: blur(4px);
-        }
-
-        .bp-modal {
-          width: 480px;
-          background: #fff;
-          border: 1px solid #e5e5e5;
-          border-radius: 22px;
-          padding: 30px;
-          animation: modalIn 0.18s ease;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-        }
-
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.96) translateY(8px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .bp-modal-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-
-        .bp-modal-title {
-          font-size: 20px;
-          font-weight: 800;
-          color: #000;
-          letter-spacing: -0.3px;
-        }
-
-        .bp-modal-close {
-          width: 34px;
-          height: 34px;
-          border-radius: 8px;
-          border: 1px solid #e5e5e5;
-          background: #fff;
-          color: #666;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: background 0.12s;
-        }
-
-        .bp-modal-close:hover { background: #f5f5f5; color: #000; }
-
-        .bp-form-grid { display: flex; flex-direction: column; gap: 12px; }
-
-        .bp-password-field { margin-top: 12px; }
-
-        .bp-field-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: #888;
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
-          margin-bottom: 6px;
-          display: block;
-        }
-
-        .bp-input {
-          width: 100%;
-          padding: 12px 14px;
-          border-radius: 10px;
-          border: 1px solid #e5e5e5;
-          background: #fafafa;
-          color: #000;
-          font-family: 'Outfit', sans-serif;
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.15s, background 0.15s;
-        }
-
-        .bp-input::placeholder { color: #bbb; }
-        .bp-input:focus { border-color: #d4841a88; background: #fff; }
-
-        .bp-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        .bp-submit-btn {
-          width: 100%;
-          background: #d4841a;
-          border: none;
-          padding: 13px;
-          border-radius: 12px;
-          color: #fff;
-          cursor: pointer;
-          font-family: 'Outfit', sans-serif;
-          font-size: 15px;
-          font-weight: 700;
-          margin-top: 4px;
-          transition: background 0.15s;
-        }
-
-        .bp-submit-btn:hover { background: #e8951f; }
-
-        .bp-empty {
-          padding: 60px;
-          text-align: center;
-          color: #ccc;
-          font-size: 14px;
-        }
-      `}</style>
-
-      <div className="bp-root">
-        {/* HEADER */}
-        <div className="bp-header">
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-8 anim-fadeUp">
           <div>
-            <div className="bp-title">Branch Management</div>
-            <div className="bp-subtitle">Manage all restaurant branches</div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400 mb-1" style={TNR}>
+              Admin Panel
+            </p>
+            <h1 className="text-4xl font-bold text-black leading-none mb-1" style={{ ...TNR, letterSpacing: "-0.02em" }}>
+              Branch Management
+            </h1>
+            <p className="text-sm text-gray-400 mt-1" style={TNR}>
+              {branches.length} total branch{branches.length !== 1 ? "es" : ""}
+            </p>
           </div>
-          <button className="bp-create-btn" onClick={() => setShowModal(true)}>
-            <Plus size={16} />
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:bg-gray-900 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 transition-all duration-200"
+            style={TNR}
+          >
+            <Plus size={15} strokeWidth={2.5} />
             Create Branch
           </button>
         </div>
 
-        {/* TABLE */}
-        <div className="bp-table-wrap">
-          <table className="bp-table">
+        {/* ── Summary Cards ── */}
+        <div className="grid grid-cols-3 gap-4 mb-8 anim-fadeUp" style={{ animationDelay: "0.1s" }}>
+          {[
+            { label: "Total Branches",  value: branches.length, border: "border-gray-200",   bg: "bg-white",        num: "text-black"        },
+            { label: "Active Branches", value: active,          border: "border-emerald-200", bg: "bg-emerald-50",   num: "text-emerald-700"  },
+            { label: "Inactive",        value: inactive,        border: "border-red-200",     bg: "bg-red-50",       num: "text-red-700"      },
+          ].map((c) => (
+            <div key={c.label} className={`rounded-2xl border ${c.border} ${c.bg} px-6 py-5 shadow-sm`}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-2" style={TNR}>{c.label}</p>
+              <p className={`text-4xl font-bold ${c.num}`} style={TNR}>{c.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Table ── */}
+        <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm anim-fadeUp" style={{ animationDelay: "0.2s" }}>
+          <table className="w-full text-sm" style={TNR}>
             <thead>
-              <tr>
-                {["Branch", "Manager", "HR", "Phone", "Employees", "Status", "Action"].map((h) => (
-                  <th key={h}>{h}</th>
+              <tr className="bg-black text-white">
+                {["Branch", "HR", "Contact", "Employees", "Status", "Action"].map((h) => (
+                  <th key={h} className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.12em]" style={TNR}>
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {branches.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
-                    <div className="bp-empty">No branches yet. Create your first one.</div>
+                  <td colSpan={7} className="py-20 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+                        <Building2 size={24} className="text-gray-300" />
+                      </div>
+                      <p className="text-gray-400 font-medium" style={TNR}>No branches yet</p>
+                      <p className="text-gray-300 text-xs" style={TNR}>Click "Create Branch" to add your first one.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                branches.map((branch) => (
-                  <tr key={branch._id}>
-                    <td>
-                      <div className="bp-branch-cell">
-                        <div className="bp-branch-icon">
-                          <Building2 size={18} />
+                branches.map((branch, i) => (
+                  <tr
+                    key={branch._id}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors duration-150"
+                    style={{ animationDelay: `${i * 0.04}s` }}
+                  >
+                    {/* Branch name + address */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center flex-shrink-0">
+                          <Building2 size={16} className="text-white" />
                         </div>
                         <div>
-                          <div className="bp-branch-name">{branch.branchName}</div>
-                          <div className="bp-branch-addr">{branch.address}</div>
+                          <p className="font-bold text-black text-sm" style={TNR}>{branch.branchName}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1" style={TNR}>
+                            <MapPin size={10} />
+                            {branch.address}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td>{branch.managerName || "—"}</td>
-                    <td>{branch.hrName || "—"}</td>
-                    <td>{branch.phone || "—"}</td>
-                    <td>
-                      <div className="bp-employees">
-                        <Users size={14} />
-                        {branch.totalEmployees ?? 0}
+
+                    {/* Manager */}
+                    {/* <td className="px-5 py-4">
+                      {branch.managerName ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold text-blue-700" style={TNR}>
+                              {branch.managerName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-gray-700 text-sm" style={TNR}>{branch.managerName}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-sm" style={TNR}>—</span>
+                      )}
+                    </td> */}
+
+                    {/* HR */}
+                    <td className="px-5 py-4">
+                      {branch.hrName ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold text-purple-700" style={TNR}>
+                              {branch.hrName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-gray-700 text-sm" style={TNR}>{branch.hrName}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-sm" style={TNR}>—</span>
+                      )}
+                    </td>
+
+                    {/* Contact */}
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        {branch.phone && (
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500" style={TNR}>
+                            <Phone size={10} className="text-gray-400" />
+                            {branch.phone}
+                          </span>
+                        )}
+                        {branch.email && (
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500" style={TNR}>
+                            <Mail size={10} className="text-gray-400" />
+                            {branch.email}
+                          </span>
+                        )}
+                        {!branch.phone && !branch.email && (
+                          <span className="text-gray-300 text-sm" style={TNR}>—</span>
+                        )}
                       </div>
                     </td>
-                    <td>
-                      <span className={`bp-status-badge ${branch.active ? "active" : "inactive"}`}>
-                        <span className={`bp-status-dot ${branch.active ? "active" : "inactive"}`} />
-                        {branch.active ? "Active" : "Inactive"}
-                      </span>
+
+                    {/* Employees */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+                          <Users size={13} className="text-amber-500" />
+                        </div>
+                        <span className="font-semibold text-gray-700 text-sm" style={TNR}>
+                          {branch.totalEmployees ?? 0}
+                        </span>
+                      </div>
                     </td>
-                    <td>
+
+                    {/* Status */}
+                    <td className="px-5 py-4">
+                      <StatusBadge active={branch.active} />
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-5 py-4">
                       <button
-                        className="bp-view-btn"
-                        title="View branch"
-                        onClick={() =>
-                          (window.location.href = `/admin/hr-profile?branchName=${branch.branchName}`)
-                        }
+                        onClick={() => {
+                          void openHrDashboard(branch.branchName);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white text-blue-600 text-xs font-semibold hover:bg-blue-50 hover:border-blue-200 transition-all duration-150"
+                        style={TNR}
                       >
-                        <Eye size={16} />
+                        <Eye size={13} />
+                        View
                       </button>
                     </td>
                   </tr>
@@ -1032,61 +881,171 @@ export default function BranchPage() {
           </table>
         </div>
 
-        {/* MODAL */}
+        {/* ── Create Branch Modal ── */}
         {showModal && (
-          <div className="bp-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}>
-            <div className="bp-modal">
-              <div className="bp-modal-head">
-                <div className="bp-modal-title">Create New Branch</div>
-                <button className="bp-modal-close" title="Close modal" onClick={() => setShowModal(false)}>
-                  <X size={16} />
-                </button>
-              </div>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+          >
+            <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden anim-scaleIn" style={TNR}>
 
-              <div className="bp-form-grid">
-                <div>
-                  <label className="bp-field-label">Branch Name *</label>
-                  <input className="bp-input" placeholder="e.g. Downtown Branch" value={branchName} onChange={(e) => setBranchName(e.target.value)} />
-                </div>
-                <div>
-                  <label className="bp-field-label">Address *</label>
-                  <input className="bp-input" placeholder="Full address" value={address} onChange={(e) => setAddress(e.target.value)} />
-                </div>
+              {/* Top accent */}
+              <div className="h-1.5 w-full bg-black" />
 
-                <div className="bp-form-row">
-                  <div>
-                    <label className="bp-field-label">Phone</label>
-                    <input className="bp-input" placeholder="+91 00000 00000" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="bp-field-label">Email</label>
-                    <input className="bp-input" placeholder="branch@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <div className="bp-password-field">
-                      <label className="bp-field-label">Password</label>
-                      <input className="bp-input" type="password" placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="p-7">
+                {/* Modal header */}
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-black flex items-center justify-center flex-shrink-0">
+                      <Building2 size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-black leading-tight" style={{ ...TNR, letterSpacing: "-0.02em" }}>
+                        Create Branch
+                      </h2>
+                      <p className="text-xs text-gray-400 mt-0.5" style={TNR}>Fill in the details below</p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-black transition-all"
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
 
-                <div className="bp-form-row">
-                  <div>
-                    <label className="bp-field-label">Manager Name</label>
-                    <input className="bp-input" placeholder="Manager's name" value={managerName} onChange={(e) => setManagerName(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="bp-field-label">HR Name</label>
-                    <input className="bp-input" placeholder="HR's name" value={hrName} onChange={(e) => setHrName(e.target.value)} />
-                  </div>
-                </div>
+                <div className="w-full h-px bg-gray-100 mb-6" />
 
-                <button className="bp-submit-btn" onClick={createBranch}>
-                  Create Branch
-                </button>
+                {/* Form */}
+                <div className="flex flex-col gap-4">
+
+                  {/* Section: Identity */}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400" style={TNR}>Branch Identity</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField label="Branch Name *" icon={<Building2 size={13}/>}>
+                      <input
+                        className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                        placeholder="e.g. Downtown Branch"
+                        value={branchName}
+                        onChange={(e) => setBranchName(e.target.value)}
+                        style={TNR}
+                      />
+                    </FormField>
+                    <FormField label="Address *" icon={<MapPin size={13}/>}>
+                      <input
+                        className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                        placeholder="Full address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        style={TNR}
+                      />
+                    </FormField>
+                  </div>
+
+                  {/* Section: Contact */}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400 mt-1" style={TNR}>Contact & Access</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField label="Phone" icon={<Phone size={13}/>}>
+                      <input
+                        className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                        placeholder="+91 00000 00000"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        style={TNR}
+                      />
+                    </FormField>
+                    <FormField label="Email" icon={<Mail size={13}/>}>
+                      <input
+                        className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                        placeholder="branch@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        style={TNR}
+                      />
+                    </FormField>
+                  </div>
+                  <FormField label="Password" icon={<Lock size={13}/>}>
+                    <input
+                      type="password"
+                      className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                      placeholder="Create a password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={TNR}
+                    />
+                  </FormField>
+
+                  {/* Section: People */}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400 mt-1" style={TNR}>People</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* <FormField label="Manager Name" icon={<User size={13}/>}>
+                      <input
+                        className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                        placeholder="Manager's full name"
+                        value={managerName}
+                        onChange={(e) => setManagerName(e.target.value)}
+                        style={TNR}
+                      />
+                    </FormField> */}
+                    <FormField label="HR Name" icon={<User size={13}/>}>
+                      <input
+                        className="w-full h-11 border border-gray-200 rounded-xl bg-gray-50 px-4 pl-9 text-sm text-black placeholder-gray-300 outline-none transition-all focus:border-black focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,0,0,0.06)]"
+                        placeholder="HR's full name"
+                        value={hrName}
+                        onChange={(e) => setHrName(e.target.value)}
+                        style={TNR}
+                      />
+                    </FormField>
+                  </div>
+
+                  {/* Submit */}
+                  <button
+                    onClick={createBranch}
+                    disabled={creating}
+                    className="w-full h-12 bg-black text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-900 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+                    style={TNR}
+                  >
+                    {creating ? (
+                      <><div className="spinner" /> Creating…</>
+                    ) : (
+                      <><Plus size={15} strokeWidth={2.5} /> Create Branch</>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
     </>
+  );
+}
+
+// ── Reusable field wrapper ──────────────────────────────────────────────────────
+function FormField({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label
+        className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 mb-1.5"
+        style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none">
+          {icon}
+        </span>
+        {children}
+      </div>
+    </div>
   );
 }
