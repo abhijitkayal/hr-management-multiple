@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 
 import Branch from "@/lib/models/Branch";
 import User from "@/lib/models/User";
+import bcrypt from "bcryptjs";
 
 export async function GET() {
   try {
@@ -112,19 +113,22 @@ export async function POST(
       branchName;
 
     try {
-      await User.create({
-        name: userName,
-        email,
-        password,
-        role: "hr",
-        branch: created._id,
-        branchName,
-        avatar: userName
-          .split(" ")
-          .map((word: string) => word[0])
-          .join("")
-          .toUpperCase(),
-      });
+      const hashedPassword =
+  await bcrypt.hash(password, 12);
+
+await User.create({
+  name: userName,
+  email,
+  password: hashedPassword,
+  role: "hr",
+  branch: created._id,
+  branchName,
+  avatar: userName
+    .split(" ")
+    .map((word: string) => word[0])
+    .join("")
+    .toUpperCase(),
+});
     } catch (userError: unknown) {
       await Branch.deleteOne({
         _id: created._id,
